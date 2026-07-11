@@ -98,6 +98,63 @@ export default function Tickets() {
                   </View>
                 )}
 
+                {/* Passengers list (bus tickets) */}
+                {t.passengers && t.passengers.length > 0 && (
+                  <View style={styles.paxBlock}>
+                    <Text style={styles.paxKicker}>PASSAGEIROS ({t.passengers.length})</Text>
+                    {t.passengers.map((p, pi) => (
+                      <View key={pi} style={styles.paxRow}>
+                        <View style={styles.paxSeat}>
+                          <Text style={styles.paxSeatText}>{p.seat}</Text>
+                        </View>
+                        <Text style={styles.paxName}>{p.name}</Text>
+                        <Text style={styles.paxClass}>{p.class}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Amenities (hotel) */}
+                {t.amenities && t.amenities.length > 0 && (
+                  <View>
+                    <Text style={styles.paxKicker}>AMENIDADES</Text>
+                    <View style={styles.amenityGrid}>
+                      {t.amenities.map((a, ai) => (
+                        <View key={ai} style={styles.amenityChip}>
+                          <Ionicons name={a.icon as any} size={13} color={colors.brandDark} />
+                          <Text style={styles.amenityText}>{a.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Nearby POIs (hotel) */}
+                {t.nearby && t.nearby.length > 0 && (
+                  <View>
+                    <Text style={styles.paxKicker}>PONTOS DE INTERESSE PRÓXIMOS</Text>
+                    {t.nearby.map((n, ni) => (
+                      <View key={ni} style={styles.nearbyRow}>
+                        <Ionicons name="location-outline" size={13} color={colors.onSurfaceMuted} />
+                        <Text style={styles.nearbyName}>{n.name}</Text>
+                        <Text style={styles.nearbyDist}>{n.distance}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Extras / reminders */}
+                {t.extras && t.extras.length > 0 && (
+                  <View style={styles.extrasBox}>
+                    {t.extras.map((e, ei) => (
+                      <View key={ei} style={styles.extraRow}>
+                        <Ionicons name="checkmark-circle" size={13} color={colors.brandSecondary} />
+                        <Text style={styles.extraText}>{e}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
                 <View style={styles.divider} />
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
@@ -315,4 +372,40 @@ const styles = StyleSheet.create({
   },
   qrHintText: { textAlign: "center", fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6 },
   qrRes: { textAlign: "center", fontSize: 10, color: colors.onSurfaceMuted, marginTop: spacing.sm },
+
+  // Passengers / amenities / nearby / extras
+  paxBlock: { gap: 4 },
+  paxKicker: { fontSize: 10, letterSpacing: 1, fontWeight: "700", color: colors.brandSecondary, marginBottom: 4 },
+  paxRow: {
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm, paddingVertical: 8,
+    borderRadius: radius.sm,
+    marginBottom: 4,
+  },
+  paxSeat: {
+    width: 34, height: 34, borderRadius: 10,
+    backgroundColor: colors.brandDark,
+    alignItems: "center", justifyContent: "center",
+  },
+  paxSeatText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  paxName: { flex: 1, fontSize: 12, fontWeight: "700", color: colors.onSurface },
+  paxClass: { fontSize: 10, fontWeight: "600", color: colors.onSurfaceMuted, textTransform: "uppercase" },
+  amenityGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2 },
+  amenityChip: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: colors.brandTertiary,
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  amenityText: { fontSize: 11, fontWeight: "600", color: colors.brandDark },
+  nearbyRow: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingVertical: 6, paddingHorizontal: 4,
+  },
+  nearbyName: { flex: 1, fontSize: 12, color: colors.onSurface, fontWeight: "500" },
+  nearbyDist: { fontSize: 11, fontWeight: "700", color: colors.brandPrimary },
+  extrasBox: { backgroundColor: colors.sunSoft, borderRadius: radius.md, padding: spacing.sm, gap: 4 },
+  extraRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  extraText: { flex: 1, fontSize: 11, color: colors.onBrandTerracottaSoft, lineHeight: 15, fontWeight: "500" },
 });

@@ -82,11 +82,12 @@ export const shadows = {
 
 export const images = {
   hero: "https://images.unsplash.com/photo-1655992943809-02cefc9e1326?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxQb3J0aW1hbyUyMGJlYWNoJTIwQWxnYXJ2ZXxlbnwwfHx8fDE3ODM2MDY5ODB8MA&ixlib=rb-4.1.0&q=85",
-  benagil: "https://images.unsplash.com/photo-1601999114487-fac7c37ecd94?auto=format&fit=crop&w=1400&q=80",
-  praia: "https://images.unsplash.com/photo-1509233725247-49e657c54213?auto=format&fit=crop&w=1400&q=80",
-  kidsBeach: "https://images.pexels.com/photos/25695907/pexels-photo-25695907.jpeg",
+  benagil: "https://images.unsplash.com/photo-1600188769099-0e9a2c40d5d3?auto=format&fit=crop&w=1400&q=80",
+  praia: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1400&q=80",
+  marinha: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1400&q=80",
+  kidsBeach: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1400&q=80",
   restaurant: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
   marina: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1400&q=80",
 };
 
-export const TRIP_START_ISO = "2026-07-12T16:05:00+01:00";
+export const TRIP_START_ISO = "2026-07-12T15:15:00+01:00";

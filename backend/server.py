@@ -376,6 +376,176 @@ RESTAURANTS = [
         "location_id": "hotel",
         "latitude": 37.1395, "longitude": -8.5442,
     },
+    # ---- 🐟 MAIS PORTUGUESES / MARISCO ----
+    {
+        "id": "dona-barca",
+        "name": "Marisqueira Dona Barca",
+        "type": "🐟 Marisco tradicional",
+        "price_range": "€22-35/pessoa",
+        "price_avg": 28,
+        "rating": 4.7,
+        "reviews": 3210,
+        "highlights": "Cataplana famosa, arroz de marisco, sardinhas grelhadas. Uma instituição de Portimão.",
+        "recommended_for": "Almoço especial de peixe",
+        "image_key": "marisco",
+        "image_url": "https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Cataplana de peixe (2 pax)", "price": "€38,00"},
+            {"name": "Arroz de marisco", "price": "€22,00"},
+            {"name": "Sardinhas grelhadas 6un.", "price": "€12,00"},
+            {"name": "Polvo à lagareiro", "price": "€21,00"},
+            {"name": "Menu criança", "price": "€8,50"},
+        ],
+        "promo": "Sardinhada quinta e sexta 19h — 8 sardinhas + salada €14",
+        "tags": ["kids-friendly", "tradicional", "marisco"],
+        "location_id": "praia-rocha",
+        "latitude": 37.1188, "longitude": -8.5411,
+    },
+    {
+        "id": "sushi-portimao",
+        "name": "Sushi Sky Portimão",
+        "type": "🍣 Sushi & rolls",
+        "price_range": "€15-22/pessoa",
+        "price_avg": 18,
+        "rating": 4.6,
+        "reviews": 1120,
+        "highlights": "All-you-can-eat sushi ao almoço €14,90. Fresco e variado. Ambiente moderno.",
+        "recommended_for": "Almoço com Alexsandro (adora sushi)",
+        "image_key": "sushi",
+        "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Rodízio almoço (12h-15h)", "price": "€14,90"},
+            {"name": "Rodízio jantar (19h-22h)", "price": "€19,90"},
+            {"name": "Rodízio criança (5-11)", "price": "€8,50"},
+            {"name": "Combinado 24 pçs", "price": "€18,00"},
+            {"name": "Miso soup", "price": "€2,50"},
+        ],
+        "promo": "Ao almoço 12h-15h €14,90 all-you-can-eat — grande poupança!",
+        "tags": ["kids-friendly", "sushi", "vegetariano", "poupança"],
+        "location_id": "praia-rocha",
+        "latitude": 37.1182, "longitude": -8.5395,
+    },
+    {
+        "id": "gelataria-portimao",
+        "name": "Gelateria Massimiliano",
+        "type": "🍦 Gelataria artesanal italiana",
+        "price_range": "€3-5/pessoa",
+        "price_avg": 4,
+        "rating": 4.9,
+        "reviews": 2340,
+        "highlights": "Gelato feito na hora com receitas italianas. 24 sabores incluindo doce-de-leite e cheesecake.",
+        "recommended_for": "Sobremesa depois da praia",
+        "image_key": "gelato",
+        "image_url": "https://images.unsplash.com/photo-1567206563064-6f60f40a2b57?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "1 bola cone/copo", "price": "€2,80"},
+            {"name": "2 bolas", "price": "€4,20"},
+            {"name": "3 bolas + chantilly", "price": "€6,00"},
+            {"name": "Milkshake sabor à escolha", "price": "€4,50"},
+            {"name": "Taça infantil (Arthur)", "price": "€2,50"},
+        ],
+        "promo": "Happy hour 15h-17h — 2 bolas €3,20 (poupança €1)",
+        "tags": ["kids-friendly", "vegetariano", "sobremesa"],
+        "location_id": "praia-rocha",
+        "latitude": 37.1175, "longitude": -8.5398,
+    },
+    {
+        "id": "padaria-tentacao",
+        "name": "A Tentação • Produtos Gourmet",
+        "type": "🥐 Padaria & pastelaria",
+        "price_range": "€2-6/pessoa",
+        "price_avg": 4,
+        "rating": 4.7,
+        "reviews": 890,
+        "highlights": "990m do Studio 17! Pão fresco, pastéis-de-nata, sandes gourmet. Perfeito para pequenos-almoços.",
+        "recommended_for": "Pequeno-almoço rápido",
+        "image_key": "padaria",
+        "image_url": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Pastel-de-nata", "price": "€1,20"},
+            {"name": "Croissant misto", "price": "€2,80"},
+            {"name": "Sandes fumeiro + queijo", "price": "€3,90"},
+            {"name": "Sumo natural laranja", "price": "€2,50"},
+            {"name": "Bolo do dia fatia", "price": "€2,30"},
+        ],
+        "promo": "Combo pequeno-almoço (café+nata+sumo) €4,50",
+        "tags": ["kids-friendly", "pequeno-almoço", "barato", "poupança"],
+        "location_id": "hotel",
+        "latitude": 37.1408, "longitude": -8.5442,
+    },
+    {
+        "id": "pizza-brasil",
+        "name": "🇧🇷 Pizzaria Sabor do Brasil",
+        "type": "🇧🇷 Pizza estilo brasileiro",
+        "price_range": "€9-14/pizza",
+        "price_avg": 12,
+        "rating": 4.5,
+        "reviews": 456,
+        "highlights": "Pizza brasileira com bordas recheadas, sabores como calabresa, portuguesa, catupiry.",
+        "recommended_for": "Jantar rápido e barato",
+        "image_key": "pizza-br",
+        "image_url": "https://images.unsplash.com/photo-1548369937-47519962c11a?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Pizza Calabresa (grande)", "price": "€12,50"},
+            {"name": "Pizza Portuguesa (grande)", "price": "€13,50"},
+            {"name": "Pizza Catupiry frango", "price": "€13,00"},
+            {"name": "Pizza doce (banana canela)", "price": "€10,00"},
+            {"name": "Refri lata", "price": "€2,00"},
+        ],
+        "promo": "2 pizzas grandes €22 (poupança €5) — perfeito família 4pax",
+        "tags": ["brasileiro", "kids-friendly", "pizza", "poupança"],
+        "location_id": "hotel",
+        "latitude": 37.1392, "longitude": -8.5450,
+    },
+    {
+        "id": "praia-esplanada",
+        "name": "Esplanada da Rocha",
+        "type": "☕ Café praia • esplanada",
+        "price_range": "€4-10/pessoa",
+        "price_avg": 6,
+        "rating": 4.4,
+        "reviews": 1560,
+        "highlights": "Café e petiscos com vista para a Praia da Rocha. Ideal para snack a meio da tarde.",
+        "recommended_for": "Pausa entre praia e passeio",
+        "image_key": "esplanada",
+        "image_url": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Bica (café expresso)", "price": "€0,90"},
+            {"name": "Galão", "price": "€1,80"},
+            {"name": "Pastel-de-nata", "price": "€1,50"},
+            {"name": "Sandes mista tostada", "price": "€3,80"},
+            {"name": "Sumo natural", "price": "€3,50"},
+            {"name": "Bolinho de bacalhau (un.)", "price": "€1,20"},
+        ],
+        "promo": "Cerveja + tremoços grátis das 17h-19h",
+        "tags": ["kids-friendly", "vista-mar", "barato", "poupança"],
+        "location_id": "praia-rocha",
+        "latitude": 37.1158, "longitude": -8.5375,
+    },
+    {
+        "id": "vegan-portimao",
+        "name": "Verde Puro",
+        "type": "🌱 Vegetariano & vegan",
+        "price_range": "€10-15/pessoa",
+        "price_avg": 12,
+        "rating": 4.6,
+        "reviews": 340,
+        "highlights": "Buffet vegetariano ao almoço, hambúrgueres vegan, sumos detox. Único vegan em Portimão.",
+        "recommended_for": "Alternativa saudável",
+        "image_key": "vegan",
+        "image_url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Buffet vegetariano (kg)", "price": "€10,90"},
+            {"name": "Hambúrguer vegan (grão)", "price": "€8,50"},
+            {"name": "Wrap tofu marinado", "price": "€7,00"},
+            {"name": "Sumo verde detox", "price": "€4,00"},
+            {"name": "Sobremesa vegan", "price": "€3,50"},
+        ],
+        "promo": "Almoço executivo €9,90 (prato + sumo)",
+        "tags": ["vegetariano", "kids-friendly", "saudável", "poupança"],
+        "location_id": "hotel",
+        "latitude": 37.1388, "longitude": -8.5432,
+    },
 ]
 
 HACKS = [
@@ -963,40 +1133,70 @@ async def shopping_toggle(payload: ShoppingToggle):
 
 
 # ---- Tickets ----
+PASSENGERS = ["ALEX SACRAMENTO", "PRISCILA SACRAMENTO", "ALEXSANDRO SACRAMENTO", "ARTHUR GABRIEL SACRAMENTO"]
+
 @api_router.get("/tickets")
 async def tickets():
-    # QR code helper using quickchart.io free API (renders any string as QR)
     def qr(data: str) -> str:
         from urllib.parse import quote
         return f"https://quickchart.io/qr?text={quote(data)}&size=300&margin=2"
 
+    ida_seats = [50, 51, 52, 53]
+    volta_seats = [43, 44, 45, 46]
+
     return [
         {
             "id": "expressos-ida", "type": "bus", "icon": "bus",
-            "operator": "Rede Expressos • EVA Transportes",
+            "operator": "Rede Expressos • via Omio",
             "title": "Lisboa Sete Rios → Portimão",
             "code": "R6LJC56",
             "reservation": "26cde43a-57f3-44ee-961d-365506e1dec4",
             "when": "12 Jul 2026 • 15:15",
-            "arrival": "18:30 • Terminal Rua da Abicada",
+            "arrival": "18:30 • Terminal Rodoviário (Rua da Abicada)",
             "duration": "3h 15m • 0 mudanças",
             "seat": "Lugares 50 • 51 • 52 • 53",
             "price": "Bilhete digital • pode usar offline",
-            "qr_url": qr("R6LJC56 - Rede Expressos - Lisboa Sete Rios - Portimao - 12/07/2026 15:15"),
+            "qr_url": qr("R6LJC56"),
+            "passengers": [
+                {"name": PASSENGERS[i], "seat": ida_seats[i], "class": "Inteiro"} for i in range(4)
+            ],
             "color": "#0284C7",
+            "extras": [
+                "Chegar 15-20 min antes ao terminal",
+                "Bagagem: 1 mala porão + 1 mão por pessoa",
+                "Powerbank + snacks para as crianças (3h15)",
+            ],
         },
         {
             "id": "hotel", "type": "hotel", "icon": "bed",
-            "operator": "Atlantichotels",
+            "operator": "Atlantichotels • via Agoda",
             "title": "Studio 17 by Atlantichotels",
             "code": "STD17-1276",
-            "reservation": "3 noites • studio 4 pax",
-            "when": "12 Jul → 15 Jul",
+            "reservation": "3 noites • studio 4 pax • 50m²",
+            "when": "12 Jul → 15 Jul • 3 noites",
             "arrival": "Rua João Simões Tavares 17, Portimão",
-            "duration": "Cozinha completa • Wi-Fi grátis",
-            "seat": "Preparar: €24 taxa + €200 caução (cartão)",
-            "price": "Perguntar por upgrade grátis 🎁",
+            "duration": "Check-in 16:00-23:30 • Check-out até 11:00",
+            "seat": "Score 7.9 Muito bom • Excelente localização",
+            "price": "Preparar €24 taxa turística + €200 caução (cartão)",
             "qr_url": qr("Studio 17 Atlantichotels - Sacramento family - 12-15 Jul 2026"),
+            "amenities": [
+                {"icon": "wifi", "label": "Wi-Fi grátis"},
+                {"icon": "water", "label": "Piscina"},
+                {"icon": "restaurant", "label": "Cozinha completa"},
+                {"icon": "flag", "label": "Campo de golfe"},
+                {"icon": "boat", "label": "Parque aquático"},
+                {"icon": "car", "label": "Traslado do aeroporto"},
+                {"icon": "cafe", "label": "Sala de estar"},
+                {"icon": "briefcase", "label": "Guarda-volumes"},
+                {"icon": "leaf", "label": "Jardim"},
+            ],
+            "nearby": [
+                {"name": "Estádio Municipal de Portimão", "distance": "700 m"},
+                {"name": "Forte de Santa Catarina", "distance": "760 m"},
+                {"name": "Museu de Portimão", "distance": "820 m"},
+                {"name": "A Tentação - Produtos Gourmet", "distance": "990 m"},
+                {"name": "Igreja Nossa Senhora da Conceição", "distance": "1.2 km"},
+            ],
             "color": "#1D8086",
         },
         {
@@ -1011,23 +1211,411 @@ async def tickets():
             "seat": "4 pax • levar SPF50+ e câmara",
             "price": "~€30/pessoa • ~€120 total",
             "qr_url": qr("Benagil Small-Group Tour - Sacramento - 13/07/2026 15:00"),
+            "extras": [
+                "Reservar 1 dia antes na Marina",
+                "SPF50+ obrigatório (2h ao sol)",
+                "Câmara à prova de água (rec.)",
+            ],
             "color": "#D96C4E",
         },
         {
             "id": "expressos-volta", "type": "bus", "icon": "bus",
-            "operator": "Rede Expressos • EVA Transportes",
+            "operator": "Rede Expressos • via Omio",
             "title": "Portimão → Lisboa Sete Rios",
             "code": "R6LJC5N",
             "reservation": "26cde43a-57f3-44ee-961d-365506e1dec4",
             "when": "15 Jul 2026 • 13:10",
-            "arrival": "16:25 • Lisboa Sete Rios",
+            "arrival": "16:25 • Lisboa Terminal Sete Rios",
             "duration": "3h 15m • 0 mudanças",
             "seat": "Lugares 43 • 44 • 45 • 46",
             "price": "Bilhete digital • pode usar offline",
-            "qr_url": qr("R6LJC5N - Rede Expressos - Portimao - Lisboa Sete Rios - 15/07/2026 13:10"),
+            "qr_url": qr("R6LJC5N"),
+            "passengers": [
+                {"name": PASSENGERS[i], "seat": volta_seats[i], "class": "Inteiro"} for i in range(4)
+            ],
             "color": "#0284C7",
+            "extras": [
+                "Check-out 11:00 → Bolt até Terminal Rua da Abicada",
+                "Chegar 15 min antes",
+            ],
         },
     ]
+
+
+# ---- Hotel details (Agoda enrichment) ----
+@api_router.get("/hotel-details")
+async def hotel_details():
+    return {
+        "name": "Studio 17 by Atlantichotels",
+        "address": "Rua João Simões Tavares 17, Urb. Alto do Quintão, Portimão 8500-293",
+        "score": 7.9,
+        "score_label": "Muito bom",
+        "score_hint": "Excelente localização",
+        "size_m2": 50,
+        "check_in": "16:00 às 23:30",
+        "check_out": "até às 11:00",
+        "photo": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80",
+        "layout": [
+            {"label": "Quarto 1", "detail": "2 camas de solteiro"},
+            {"label": "Espaço comum", "detail": "1 sofá-cama"},
+            {"label": "Casa de banho", "detail": "Banheira + secador"},
+            {"label": "Cozinha", "detail": "Equipada • frigorífico"},
+        ],
+        "amenities": [
+            {"icon": "wifi", "label": "Wi-Fi grátis"},
+            {"icon": "water", "label": "Piscina"},
+            {"icon": "restaurant", "label": "Cozinha completa"},
+            {"icon": "flag", "label": "Campo de golfe"},
+            {"icon": "boat", "label": "Parque aquático"},
+            {"icon": "car", "label": "Traslado do aeroporto"},
+            {"icon": "cafe", "label": "Sala de estar"},
+            {"icon": "briefcase", "label": "Guarda-volumes"},
+            {"icon": "leaf", "label": "Jardim"},
+        ],
+        "nearby": [
+            {"name": "Estádio Municipal de Portimão", "distance": "700 m"},
+            {"name": "Forte de Santa Catarina", "distance": "760 m"},
+            {"name": "Museu de Portimão", "distance": "820 m"},
+            {"name": "A Tentação - Produtos Gourmet", "distance": "990 m"},
+            {"name": "Igreja Nossa Senhora da Conceição", "distance": "1.2 km"},
+        ],
+        "reminders": [
+            {"icon": "card", "text": "Preparar €24 taxa turística (paga no check-in)"},
+            {"icon": "wallet", "text": "€200 caução no cartão (devolvido no check-out)"},
+            {"icon": "gift", "text": "Pedir upgrade grátis — 'há upgrade disponível?'"},
+            {"icon": "person", "text": "Confirmar nome no documento — Alex Sacramento"},
+        ],
+        "coords": {"lat": 37.1400, "lng": -8.5450},
+    }
+
+
+# ---- Beaches ----
+BEACHES = [
+    {
+        "id": "praia-rocha", "name": "Praia da Rocha",
+        "type": "Praia principal", "tagline": "A tua base • areal enorme",
+        "image_url": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 2.9, "walk_min": 35,
+        "rating": 4.7, "reviews": 12480,
+        "highlights": "Areal com 1.5 km, esplanadas na marginal, castelos de areia perfeitos. Bandeira Azul.",
+        "amenities": ["Bandeira Azul", "Nadador salvador", "Chapéus para alugar", "Duches", "Wi-Fi grátis"],
+        "kids_score": 5, "family_tip": "Chegar antes das 11h — melhor lugar no areal. Sombras alugam-se por €10-12/dia.",
+        "hazards": "UV alto após 12h. Traz SPF50+ e chapéus.",
+        "lat": 37.1157, "lng": -8.5372, "location_id": "praia-rocha",
+    },
+    {
+        "id": "praia-vau", "name": "Praia do Vau",
+        "type": "Praia calma", "tagline": "Menos multidão, ideal com miúdos",
+        "image_url": "https://images.unsplash.com/photo-1519821172144-4f87d554d1c8?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 4.2, "walk_min": 50,
+        "rating": 4.6, "reviews": 3210,
+        "highlights": "Rochedos vermelhos espectaculares, mar calmo, muito familiar.",
+        "amenities": ["Bandeira Azul", "Nadador salvador", "Café praia"],
+        "kids_score": 5, "family_tip": "Água calma, ideal para o Arthur (5). Bolt do hotel €8-10.",
+        "hazards": "Alguns rochedos escorregadios — cuidado com pés.",
+        "lat": 37.1123, "lng": -8.5688, "location_id": "praia-rocha",
+    },
+    {
+        "id": "praia-marinha", "name": "Praia da Marinha",
+        "type": "Praia icónica", "tagline": "Considerada uma das 10 mais bonitas do mundo",
+        "image_url": "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 18.0, "walk_min": 216,
+        "rating": 4.9, "reviews": 8760,
+        "highlights": "Falésias douradas, mar turquesa, arcos naturais. Instagram gold.",
+        "amenities": ["Miradouros", "Trilho Sete Vales Suspensos", "Parque estac. pago"],
+        "kids_score": 4, "family_tip": "Descida com ~100 degraus. Levar sapatos confortáveis. Vale a viagem!",
+        "hazards": "Descida íngreme. Não indicada para bebés de carrinho.",
+        "lat": 37.0904, "lng": -8.4092, "location_id": "benagil",
+    },
+    {
+        "id": "praia-benagil", "name": "Praia de Benagil",
+        "type": "Gruta famosa", "tagline": "A gruta com buraco no teto",
+        "image_url": "https://images.unsplash.com/photo-1600188769099-0e9a2c40d5d3?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 15.5, "walk_min": 186,
+        "rating": 4.8, "reviews": 15230,
+        "highlights": "Só se entra de barco/kayak/SUP. Reservar tour com antecedência.",
+        "amenities": ["Marina próxima", "Tours barco/kayak"],
+        "kids_score": 4, "family_tip": "Tour small-group já reservado para o Dia 2 às 15h.",
+        "hazards": "Só entrada por água — respeitar ondas.",
+        "lat": 37.0879, "lng": -8.4272, "location_id": "benagil",
+    },
+    {
+        "id": "praia-alvor", "name": "Praia de Alvor",
+        "type": "Praia longa", "tagline": "Vila de pescadores + areal enorme",
+        "image_url": "https://images.unsplash.com/photo-1544966503-7cc5ac882d5a?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 6.5, "walk_min": 78,
+        "rating": 4.7, "reviews": 5670,
+        "highlights": "Mar mais quente, areal com 3 km, vila piscatória tradicional a 5 min.",
+        "amenities": ["Bandeira Azul", "Passadiços de madeira", "Restaurantes típicos"],
+        "kids_score": 5, "family_tip": "Vai e Vem Linha 14 do hotel (€1,60-2,50). Almoço de peixe no porto!",
+        "hazards": "Ventos ocasionais à tarde.",
+        "lat": 37.1289, "lng": -8.5945, "location_id": "alvor",
+    },
+    {
+        "id": "praia-tres-irmaos", "name": "Praia dos Três Irmãos",
+        "type": "Praia com rochas", "tagline": "Rochedos-icone e água limpa",
+        "image_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 7.2, "walk_min": 86,
+        "rating": 4.7, "reviews": 4310,
+        "highlights": "Formações rochosas únicas, ligações a Alvor. Snorkeling.",
+        "amenities": ["Nadador salvador (Verão)", "Chapéus", "Bar de praia"],
+        "kids_score": 4, "family_tip": "Trazer óculos de mergulho — muitos peixes nas poças.",
+        "hazards": "Marés cobrem trilhos entre praias.",
+        "lat": 37.1276, "lng": -8.5771, "location_id": "alvor",
+    },
+    {
+        "id": "praia-carvoeiro", "name": "Praia de Carvoeiro",
+        "type": "Vila pitoresca", "tagline": "Casinhas brancas e vermelhas na falésia",
+        "image_url": "https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 12.0, "walk_min": 144,
+        "rating": 4.8, "reviews": 6540,
+        "highlights": "Praia pequena no coração da vila. Restaurantes a 30 seg do areal.",
+        "amenities": ["Restaurantes", "Boardwalk até Algar Seco"],
+        "kids_score": 4, "family_tip": "Combina almoço + praia + passeio no boardwalk.",
+        "hazards": "Areal pequeno enche rápido em Agosto.",
+        "lat": 37.0987, "lng": -8.4715, "location_id": "benagil",
+    },
+    {
+        "id": "praia-ferragudo", "name": "Praia Grande de Ferragudo",
+        "type": "Praia de estuário", "tagline": "Mar mais calmo do Algarve",
+        "image_url": "https://images.unsplash.com/photo-1503756234508-e32369269deb?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 3.8, "walk_min": 46,
+        "rating": 4.6, "reviews": 2870,
+        "highlights": "Mar quase sem ondas — bebés e crianças pequenas adoram.",
+        "amenities": ["Nadador salvador", "Kayak/SUP para alugar"],
+        "kids_score": 5, "family_tip": "PERFEITA para o Arthur (5). Do outro lado do rio Arade.",
+        "hazards": "Sombra escassa — trazer chapéus.",
+        "lat": 37.1183, "lng": -8.5119, "location_id": "praia-rocha",
+    },
+    {
+        "id": "praia-alemao", "name": "Praia do Alemão",
+        "type": "Praia escondida", "tagline": "Continuação da Praia da Rocha, mais tranquila",
+        "image_url": "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 3.5, "walk_min": 42,
+        "rating": 4.5, "reviews": 1210,
+        "highlights": "Menos gente que a Rocha, com rochedos coloridos.",
+        "amenities": ["Escadaria de acesso", "Sem estruturas — trazer chapéu"],
+        "kids_score": 3, "family_tip": "Só descida escadas — bebés de carrinho não.",
+        "hazards": "Sem apoio de nadador salvador sempre.",
+        "lat": 37.1145, "lng": -8.5305, "location_id": "praia-rocha",
+    },
+    {
+        "id": "praia-barranco", "name": "Praia do Barranco das Canas",
+        "type": "Praia secreta", "tagline": "Escapada tranquila entre falésias",
+        "image_url": "https://images.unsplash.com/photo-1520902688931-3c74fc9c1b2c?auto=format&fit=crop&w=1400&q=80",
+        "distance_from_hotel_km": 5.0, "walk_min": 60,
+        "rating": 4.4, "reviews": 890,
+        "highlights": "Areal íntimo entre falésias douradas. Pouca gente.",
+        "amenities": ["Sem estruturas", "Acesso por trilho"],
+        "kids_score": 2, "family_tip": "Só para famílias sem carrinho — trilho 10 min.",
+        "hazards": "Acesso íngreme, sem sombra.",
+        "lat": 37.1102, "lng": -8.5510, "location_id": "praia-rocha",
+    },
+]
+
+@api_router.get("/beaches")
+async def beaches():
+    return BEACHES
+
+
+# ---- Attractions ----
+ATTRACTIONS = [
+    {
+        "id": "zoomarine", "name": "Zoomarine Algarve", "category": "Parque temático",
+        "tagline": "Golfinhos + piscinas + shows — o preferido do Arthur",
+        "image_url": "https://images.unsplash.com/photo-1567196706930-4b6f9d0e0e9a?auto=format&fit=crop&w=1400&q=80",
+        "price": "€29 adulto • €22 criança (5-9)", "hours": "10h-18h",
+        "duration": "1 dia inteiro", "distance_km": 25.0, "rating": 4.6, "reviews": 15420,
+        "highlights": "Shows de golfinhos, aves e leões marinhos. Zonas aquáticas com escorregas.",
+        "kids": True, "book_url": "https://www.zoomarine.pt",
+        "family_tip": "Chegar às 10h — filas curtas. Levar fatos de banho e mudas.",
+        "lat": 37.1408, "lng": -8.2891,
+    },
+    {
+        "id": "slide-splash", "name": "Slide & Splash", "category": "Parque aquático",
+        "tagline": "O maior parque aquático do Algarve",
+        "image_url": "https://images.unsplash.com/photo-1568727349515-42a70c69ad7c?auto=format&fit=crop&w=1400&q=80",
+        "price": "€28 adulto • €21 criança", "hours": "10h-17h30",
+        "duration": "5-6h", "distance_km": 8.5, "rating": 4.5, "reviews": 8920,
+        "highlights": "Escorregas para todas as idades. Zona kids segura para o Arthur.",
+        "kids": True, "book_url": "https://www.slidesplash.com",
+        "family_tip": "Comprar bilhete online = -15%. Almoço traz-se de casa (permitido).",
+        "lat": 37.1428, "lng": -8.3856,
+    },
+    {
+        "id": "aqualand", "name": "Aqualand Algarve", "category": "Parque aquático",
+        "tagline": "Escorregas radicais + zona kids",
+        "image_url": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=80",
+        "price": "€26 adulto • €18 criança", "hours": "10h-17h",
+        "duration": "5-6h", "distance_km": 15.0, "rating": 4.4, "reviews": 4560,
+        "highlights": "Kamikaze, Rio Lento, Zona pequenos. Verão em cheio.",
+        "kids": True, "book_url": "https://www.aqualand.pt",
+        "family_tip": "Alexsandro (11) já pode ir aos escorregas grandes.",
+        "lat": 37.1350, "lng": -8.4020,
+    },
+    {
+        "id": "kayak-benagil", "name": "Kayak até Benagil", "category": "Aventura",
+        "tagline": "Alternativa low-cost ao barco",
+        "image_url": "https://images.unsplash.com/photo-1544966503-7cc5ac882d5a?auto=format&fit=crop&w=1400&q=80",
+        "price": "€25/pessoa • Free para 5 anos", "hours": "9h-17h",
+        "duration": "2h", "distance_km": 15.5, "rating": 4.7, "reviews": 3210,
+        "highlights": "Chegar de kayak à famosa gruta. Alexsandro (11) já pode remar.",
+        "kids": True, "book_url": None,
+        "family_tip": "Melhor pela manhã — água mais calma. Arthur vai no kayak com um adulto.",
+        "lat": 37.0879, "lng": -8.4272,
+    },
+    {
+        "id": "golfinhos", "name": "Passeio Golfinhos + Grutas", "category": "Marítimo",
+        "tagline": "Vê golfinhos selvagens + Benagil",
+        "image_url": "https://images.unsplash.com/photo-1518635017498-87f514b751ba?auto=format&fit=crop&w=1400&q=80",
+        "price": "€35/adulto • €25/criança", "hours": "9h-17h",
+        "duration": "2h30", "distance_km": 1.5, "rating": 4.6, "reviews": 6540,
+        "highlights": "Golfinhos-comuns são frequentes na primavera/verão. Combina com Benagil.",
+        "kids": True, "book_url": None,
+        "family_tip": "Se enjoas do mar — toma comprimido 30 min antes.",
+        "lat": 37.1236, "lng": -8.5311,
+    },
+    {
+        "id": "silves", "name": "Castelo de Silves", "category": "História",
+        "tagline": "Antiga capital moura do Algarve",
+        "image_url": "https://images.unsplash.com/photo-1533106418989-88406c7cc8ca?auto=format&fit=crop&w=1400&q=80",
+        "price": "€2,80 adulto • gratis <12", "hours": "9h-18h",
+        "duration": "2h", "distance_km": 15.0, "rating": 4.5, "reviews": 4210,
+        "highlights": "Muralhas vermelhas incríveis. Vista sobre a serra e a cidade.",
+        "kids": True, "book_url": None,
+        "family_tip": "Combinar com almoço de laranjas (fruto típico local).",
+        "lat": 37.1892, "lng": -8.4405,
+    },
+    {
+        "id": "sagres", "name": "Sagres • Fim do Mundo", "category": "Miradouro",
+        "tagline": "Onde os navegadores partiam para o desconhecido",
+        "image_url": "https://images.unsplash.com/photo-1552793084-49132af00ff1?auto=format&fit=crop&w=1400&q=80",
+        "price": "€3 fortaleza • gratuito arredores", "hours": "9h30-18h30",
+        "duration": "meio-dia", "distance_km": 55.0, "rating": 4.7, "reviews": 8930,
+        "highlights": "Falésias verticais no oceano. Pôr-do-sol no Cabo de São Vicente.",
+        "kids": True, "book_url": None,
+        "family_tip": "Levar casaco leve — vento sempre. Pôr-do-sol Cabo São Vicente = magia.",
+        "lat": 37.0027, "lng": -8.9426,
+    },
+    {
+        "id": "museu-portimao", "name": "Museu de Portimão", "category": "Cultura",
+        "tagline": "Antiga fábrica de conservas • fantástico",
+        "image_url": "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=1400&q=80",
+        "price": "€3 adulto • gratis <12", "hours": "10h-18h (fecha seg)",
+        "duration": "1h30", "distance_km": 0.8, "rating": 4.6, "reviews": 2340,
+        "highlights": "História da pesca e conservas de Portimão. Muito interactivo.",
+        "kids": True, "book_url": None,
+        "family_tip": "Perfeito para dia nublado. Grátis para o Arthur.",
+        "lat": 37.1354, "lng": -8.5384,
+    },
+    {
+        "id": "forte-catarina", "name": "Forte de Santa Catarina", "category": "Miradouro",
+        "tagline": "760m do hotel • vista sobre a Praia da Rocha",
+        "image_url": "https://images.unsplash.com/photo-1568402102990-bbfd07f2f2a3?auto=format&fit=crop&w=1400&q=80",
+        "price": "Grátis", "hours": "24h (mirad.)",
+        "duration": "45 min", "distance_km": 0.76, "rating": 4.4, "reviews": 1890,
+        "highlights": "Forte do séc. XVII. Vista panorâmica. Boa foto de família.",
+        "kids": True, "book_url": None,
+        "family_tip": "Ida a pé — 10 min do hotel. Pôr-do-sol imperdível.",
+        "lat": 37.1148, "lng": -8.5310,
+    },
+    {
+        "id": "marina-portimao", "name": "Marina de Portimão", "category": "Ponto de partida",
+        "tagline": "Ponto de partida para Benagil + esplanadas",
+        "image_url": "https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=1400&q=80",
+        "price": "Grátis passear", "hours": "Sempre aberta",
+        "duration": "1-2h", "distance_km": 1.9, "rating": 4.6, "reviews": 3120,
+        "highlights": "Barcos luxuosos + esplanadas com vista + partida dos tours.",
+        "kids": True, "book_url": None,
+        "family_tip": "Depois do jantar — gelado enquanto vêem os iates.",
+        "lat": 37.1236, "lng": -8.5311,
+    },
+    {
+        "id": "grutas-marinha", "name": "Sete Vales Suspensos", "category": "Trilho",
+        "tagline": "5.7 km entre 7 praias e grutas",
+        "image_url": "https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1400&q=80",
+        "price": "Grátis", "hours": "Sempre aberto",
+        "duration": "3-4h ida e volta", "distance_km": 18.0, "rating": 4.9, "reviews": 5670,
+        "highlights": "Considerado um dos melhores trilhos de Portugal. Vistas de tirar o fôlego.",
+        "kids": False, "book_url": None,
+        "family_tip": "Só para Alexsandro (11) + adultos. Trilho pode ser cansativo para Arthur.",
+        "lat": 37.0904, "lng": -8.4092,
+    },
+    {
+        "id": "praia-alvor-vila", "name": "Vila de Alvor", "category": "Vila típica",
+        "tagline": "Passeio pela vila piscatória",
+        "image_url": "https://images.unsplash.com/photo-1516462093-b8f5be15a3d1?auto=format&fit=crop&w=1400&q=80",
+        "price": "Grátis", "hours": "Sempre",
+        "duration": "2h", "distance_km": 6.5, "rating": 4.5, "reviews": 2890,
+        "highlights": "Ruelas brancas, restaurantes de peixe, mercado tradicional.",
+        "kids": True, "book_url": None,
+        "family_tip": "Combinar com Praia de Alvor (Vai e Vem L14).",
+        "lat": 37.1289, "lng": -8.5945,
+    },
+]
+
+@api_router.get("/attractions")
+async def attractions():
+    return ATTRACTIONS
+
+
+# ---- AI Daily Tip ----
+@api_router.get("/ai-tip")
+async def ai_tip():
+    """Generates a contextual family tip via Gemini. Cached by day."""
+    if not EMERGENT_LLM_KEY:
+        return {"tip": "Dica do dia: chegar cedo à praia para melhor lugar!", "topic": "Praia"}
+
+    now = now_lisbon()
+    day_key = now.strftime("%Y-%m-%d")
+    cached = await db.ai_tips.find_one({"date": day_key}, {"_id": 0})
+    if cached:
+        return cached
+
+    # Context for prompt
+    weather_ctx = ""
+    try:
+        w = await fetch_weather()
+        weather_ctx = f"Hoje UV {int(w.get('uv_max') or 0)}, temperatura {int(w.get('temp_min') or 0)}-{int(w.get('temp_max') or 0)}°C, chuva {int(w.get('rain_chance') or 0)}%."
+    except Exception:
+        pass
+
+    day_num = max(1, min(4, (now.date() - datetime(2026, 7, 12).date()).days + 1))
+    trip_day_ctx = f"Dia {day_num} da viagem (12-15 Jul)." if 1 <= day_num <= 4 else "Antes da viagem."
+
+    prompt = f"""És o "Guia Algarve", especialista local. Família Sacramento (Alex 39, Priscila 38, Alexsandro 11, Arthur 5) em Portimão a 12-15 Jul 2026. Hospedagem: Studio 17.
+
+Contexto de hoje: {trip_day_ctx} {weather_ctx}
+
+Dá UMA dica muito prática e específica (máximo 2 frases, 40 palavras). Responde APENAS em JSON com estas chaves:
+- "tip": a dica em português europeu
+- "topic": uma de: "Praia", "Restaurante", "Poupança", "Meteo", "Crianças", "Cultura", "Segurança"
+- "icon": ícone Ionicons apropriado (ex: "sunny", "restaurant", "wallet", "rainy", "happy", "book", "shield")
+
+Não inventes preços/horários. Sê caloroso e específico."""
+
+    try:
+        chat_instance = (
+            LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"tip-{day_key}", system_message="Devolve APENAS JSON válido, sem markdown, sem ```.")
+            .with_model("gemini", "gemini-2.5-flash")
+            .with_max_tokens(200)
+        )
+        raw = await chat_instance.send_message(UserMessage(text=prompt))
+        raw = (raw or "").strip().replace("```json", "").replace("```", "").strip()
+        import json as _json
+        parsed = _json.loads(raw)
+        parsed["date"] = day_key
+        # persist
+        await db.ai_tips.replace_one({"date": day_key}, parsed, upsert=True)
+        parsed.pop("_id", None)
+        return parsed
+    except Exception as e:
+        logger.warning("ai_tip failed: %s", e)
+        return {"tip": "Chegar à praia antes das 11h garante melhor lugar + sol menos agressivo para as crianças.", "topic": "Praia", "icon": "sunny", "date": day_key}
+
+
+# ---- AI Chat (Emergent LLM Key + Gemini) ----
+SYSTEM_PROMPT_CHAT_MARKER = "chat-marker"
 
 
 # ---- Emergency contacts ----

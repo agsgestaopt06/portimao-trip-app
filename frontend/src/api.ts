@@ -65,6 +65,10 @@ export const api = {
   tickets: () => req<Ticket[]>("/tickets"),
   emergency: () => req<EmergencyContact[]>("/emergency"),
   tripStats: () => req<TripStats>("/trip-stats"),
+  beaches: () => req<Beach[]>("/beaches"),
+  attractions: () => req<Attraction[]>("/attractions"),
+  hotelDetails: () => req<HotelDetails>("/hotel-details"),
+  aiTip: () => req<AiTip>("/ai-tip"),
 };
 
 // Shared types
@@ -129,6 +133,44 @@ export type Ticket = {
   when: string; arrival: string; duration?: string;
   seat: string; price: string; color: string;
   qr_url?: string;
+  passengers?: { name: string; seat: number; class: string }[];
+  amenities?: { icon: string; label: string }[];
+  nearby?: { name: string; distance: string }[];
+  extras?: string[];
+};
+
+export type Beach = {
+  id: string; name: string; type: string; tagline: string;
+  image_url: string; distance_from_hotel_km: number; walk_min: number;
+  rating: number; reviews: number;
+  highlights: string;
+  amenities: string[];
+  kids_score: number; family_tip: string; hazards: string;
+  lat: number; lng: number; location_id: string;
+};
+
+export type Attraction = {
+  id: string; name: string; category: string; tagline: string;
+  image_url: string; price: string; hours: string; duration: string;
+  distance_km: number; rating: number; reviews: number;
+  highlights: string; kids: boolean; book_url: string | null;
+  family_tip: string; lat: number; lng: number;
+};
+
+export type HotelDetails = {
+  name: string; address: string;
+  score: number; score_label: string; score_hint: string;
+  size_m2: number; check_in: string; check_out: string;
+  photo: string;
+  layout: { label: string; detail: string }[];
+  amenities: { icon: string; label: string }[];
+  nearby: { name: string; distance: string }[];
+  reminders: { icon: string; text: string }[];
+  coords: { lat: number; lng: number };
+};
+
+export type AiTip = {
+  tip: string; topic: string; icon: string; date?: string;
 };
 
 export type EmergencyContact = {

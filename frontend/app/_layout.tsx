@@ -57,6 +57,8 @@ export default function RootLayout() {
           <Stack.Screen name="shopping" options={{ presentation: "card" }} />
           <Stack.Screen name="tickets" options={{ presentation: "card" }} />
           <Stack.Screen name="emergencia" options={{ presentation: "card" }} />
+          <Stack.Screen name="beaches" options={{ presentation: "card" }} />
+          <Stack.Screen name="activities" options={{ presentation: "card" }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

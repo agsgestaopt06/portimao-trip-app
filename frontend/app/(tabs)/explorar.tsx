@@ -16,14 +16,16 @@ const HUB: {
   fg: string;
 }[] = [
   { id: "tickets", title: "Bilhetes digitais", sub: "Rede Expressos + hotel + QR", icon: "ticket", route: "/tickets", bg: "#0284C7", fg: "#fff" },
-  { id: "shopping", title: "Lista Continente", sub: "13 itens • ~€35 família", icon: "cart", route: "/shopping", bg: colors.brandTertiary, fg: colors.brandDark },
-  { id: "restaurants", title: "Restaurantes", sub: "5 opções • preços reais 2026", icon: "restaurant", route: "/restaurants", bg: colors.brandTerracottaSoft, fg: colors.onBrandTerracottaSoft },
+  { id: "beaches", title: "Praias", sub: "10 melhores • Bandeira Azul", icon: "sunny", route: "/beaches", bg: colors.sunSoft, fg: "#7C4A00" },
+  { id: "activities", title: "Atividades & Atracções", sub: "Zoomarine, Benagil, Silves…", icon: "compass", route: "/activities", bg: colors.brandTertiary, fg: colors.brandDark },
+  { id: "restaurants", title: "Restaurantes", sub: "18 opções • BR + PT + sushi + vegan", icon: "restaurant", route: "/restaurants", bg: colors.brandTerracottaSoft, fg: colors.onBrandTerracottaSoft },
+  { id: "shopping", title: "Lista Continente", sub: "13 itens • ~€35 família", icon: "cart", route: "/shopping", bg: "#EFF6FF", fg: "#1E3A8A" },
   { id: "hacks", title: "Hacks & Segredos", sub: "8 dicas de agência local", icon: "flash", route: "/hacks", bg: "#1C1C1E", fg: "#fff" },
   { id: "kids", title: "Atividades crianças", sub: "6 ideias praia • Arthur & Alex", icon: "happy", route: "/kids-activities", bg: colors.sunSoft, fg: "#7C4A00" },
   { id: "budget", title: "Orçamento", sub: "Registar gastos • €250-290", icon: "wallet", route: "/budget", bg: colors.brandDark, fg: "#fff" },
   { id: "checklist", title: "Checklist", sub: "20 itens a levar", icon: "checkbox", route: "/checklist", bg: colors.surfaceSecondary, fg: colors.onSurface },
   { id: "map", title: "Mapa da viagem", sub: "8 locais + Smart Go", icon: "map", route: "/map", bg: colors.surfaceSecondary, fg: colors.onSurface },
-  { id: "gallery", title: "Galeria", sub: "Guardar fotos memoráveis", icon: "images", route: "/gallery", bg: colors.surfaceSecondary, fg: colors.onSurface },
+  { id: "gallery", title: "Galeria", sub: "Fotos e vídeos • partilhar", icon: "images", route: "/gallery", bg: colors.surfaceSecondary, fg: colors.onSurface },
   { id: "diary", title: "Diário de viagem", sub: "Escrever memórias", icon: "book", route: "/diary", bg: colors.surfaceSecondary, fg: colors.onSurface },
   { id: "emergencia", title: "Emergências", sub: "112 • hospital • farmácia", icon: "medkit", route: "/emergencia", bg: "#FEE2E2", fg: "#B91C1C" },
 ];

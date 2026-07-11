@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 4 comprehensive testing: 10/10 backend pytest tests pass (100%). Backend verified: /api/restaurants returns 18 items with all 7 new IDs (dona-barca, sushi-portimao, gelataria-portimao, padaria-tentacao, pizza-brasil, praia-esplanada, vegan-portimao); /api/beaches returns 10 beaches with image_url/kids_score/family_tip/hazards/lat/lng; /api/attractions returns 12 attractions with all expected IDs; /api/tickets ida ticket has 4 passengers (Alex/Priscila/Alexsandro/Arthur) with seats [50,51,52,53] class Inteiro, hotel ticket has 9 amenities + 5 nearby POIs; /api/hotel-details returns Studio 17 with score 7.9, size_m2 50, 9 amenities, 5 nearby, 4 reminders; /api/ai-tip returns tip+topic+icon and is cached (2 identical calls confirm). Frontend verified on mobile viewport (390x844): Home shows AI Tip card with GEMINI badge + Portuguese tip, hero image loads. /beaches shows all 4 filter chips (Todas/Ideais crianças/Perto do hotel/Icónicas), KIDS badge, family tip box, amenities row, Bora lá + Maps buttons. /activities shows all 5 filters (Todas/Kids/Aventura/Cultura/Grátis) and 12 cards with Zoomarine/Slide/Sagres/Silves, Abrir no mapa + Reservar buttons. /tickets shows all 4 passengers with seat badges 50-53, hotel amenities grid + nearby POIs (Estádio/Forte/Museu/Tentação/Igreja). /explorar hub includes Praias + Atividades cards. Deprecation warnings detected (non-blocking): shadow* style props and props.pointerEvents.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/beaches", "issues": ["Second beach card image sometimes lazy-loads slowly (blank green area briefly). Non-blocking, first-card render is instant."]}
+    ],
+    "react_native_issues": [
+      {"component": "StyleSheet shadow*", "issue": "Console shows repeated deprecation: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Not blocking but should migrate for RN 0.76+/web compatibility."},
+      {"component": "props.pointerEvents", "issue": "Console shows 'props.pointerEvents is deprecated. Use style.pointerEvents.' Non-blocking, migrate to style-based pointerEvents."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration4.py", "/app/test_reports/pytest/iteration_4.xml"],
+  "action_items": [
+    "(Optional) Migrate shadow* props to boxShadow in StyleSheet.create() calls to remove RN web deprecation warnings.",
+    "(Optional) Move pointerEvents from props to style.pointerEvents.",
+    "Consider adding testID props to beaches/activities/tickets cards for more robust future automation (tests currently rely on innerText scan)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1772 lines — recommend splitting static data (RESTAURANTS/BEACHES/ATTRACTIONS/TICKETS) into a separate data/ module for maintainability.",
+    "/api/ai-tip fallback (no EMERGENT_LLM_KEY) omits 'icon' field; consider always including icon for consistent frontend rendering."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration4.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Used existing seeded checklist/shopping and static endpoints. ai_tips MongoDB collection is auto-populated via /api/ai-tip cache.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All iteration 4 endpoints are green. Frontend onboarding must be dismissed via clicking 'Saltar' button before deep-linking to /beaches, /activities, /tickets, /explorar — localStorage flags do not skip onboarding in web preview. EXPO_PUBLIC_BACKEND_URL = https://portimao-experiences.preview.emergentagent.com."
+}

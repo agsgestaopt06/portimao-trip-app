@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 import Animated, {
-  FadeIn,
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
@@ -22,7 +21,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { api, Briefing, BusNext, TripStats, Weather } from "@/src/api";
+import { api, AiTip, Briefing, BusNext, TripStats, Weather } from "@/src/api";
 import { SmartGoSheet } from "@/src/components/SmartGoSheet";
 import { useCountdown } from "@/src/countdown";
 import { colors, images, radius, shadows, spacing, typography } from "@/src/theme";
@@ -49,14 +48,14 @@ const QUICK_ACTIONS: {
   tint: string;
 }[] = [
   { id: "tickets", label: "Bilhetes", sub: "Rede Expressos + QR", icon: "ticket", route: "/tickets", tint: colors.brandTerracottaSoft },
-  { id: "shopping", label: "Compras", sub: "Lista Continente", icon: "cart", route: "/shopping", tint: colors.brandTertiary },
-  { id: "map", label: "Mapa", sub: "Locais + Smart Go", icon: "map", route: "/map", tint: colors.sunSoft },
-  { id: "budget", label: "Orçamento", sub: "€250-290 hack", icon: "wallet", route: "/budget", tint: colors.brandTerracottaSoft },
-  { id: "emergencia", label: "Emergências", sub: "112 + hospital", icon: "medkit", route: "/emergencia", bg: "#FEE2E2" as any, tint: "#FEE2E2" },
-  { id: "hacks", label: "Hacks", sub: "8 segredos", icon: "flash", route: "/hacks", tint: colors.brandTertiary },
+  { id: "beaches", label: "Praias", sub: "10 melhores", icon: "sunny", route: "/beaches", tint: colors.sunSoft },
+  { id: "activities", label: "Atividades", sub: "Zoomarine, Benagil…", icon: "compass", route: "/activities", tint: colors.brandTertiary },
+  { id: "restaurants", label: "Restaurantes", sub: "18 opções", icon: "restaurant", route: "/restaurants", tint: colors.brandTerracottaSoft },
+  { id: "shopping", label: "Compras", sub: "Continente", icon: "cart", route: "/shopping", tint: colors.brandTertiary },
+  { id: "emergencia", label: "Emergências", sub: "112 + hospital", icon: "medkit", route: "/emergencia", tint: "#FEE2E2" as any },
 ];
 
-const HERO_IMAGES = [images.hero, images.benagil, images.praia];
+const HERO_IMAGES = [images.hero, images.benagil, images.marinha, images.praia, images.marina];
 
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -65,6 +64,7 @@ export default function Home() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [nextBus, setNextBus] = useState<BusNext[]>([]);
   const [stats, setStats] = useState<TripStats | null>(null);
+  const [tip, setTip] = useState<AiTip | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [heroIdx, setHeroIdx] = useState(0);
   const [smartGo, setSmartGo] = useState<{ from: string; to: string } | null>(null);
@@ -86,18 +86,20 @@ export default function Home() {
 
   const load = useCallback(async () => {
     try {
-      const [t, b, w, bn, s] = await Promise.all([
+      const [t, b, w, bn, s, aiT] = await Promise.all([
         api.trip(),
         api.briefings().catch(() => ({ items: [], now: "" })),
         api.weather().catch(() => null),
         api.busNext("hotel").catch(() => ({ stop: null, buses: [], now: "" })),
         api.tripStats().catch(() => null),
+        api.aiTip().catch(() => null),
       ]);
       setTrip(t);
       setBriefings((b as any).items || []);
       setWeather(w as Weather | null);
       setNextBus((bn as any).buses || []);
       setStats(s as TripStats | null);
+      setTip(aiT as AiTip | null);
     } catch (e) {
       console.log("home load", e);
     }
@@ -145,13 +147,20 @@ export default function Home() {
       >
         {/* Hero with countdown */}
         <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]} testID="home-hero">
-          <Animated.View
-            key={heroIdx}
-            entering={FadeIn.duration(900)}
-            style={StyleSheet.absoluteFill}
-          >
-            <Image source={{ uri: HERO_IMAGES[heroIdx] }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          </Animated.View>
+          {/* All hero images stacked, only current opacity=1 for smooth crossfade */}
+          {HERO_IMAGES.map((uri, i) => (
+            <Image
+              key={uri}
+              source={{ uri }}
+              style={[
+                StyleSheet.absoluteFill,
+                { opacity: i === heroIdx ? 1 : 0, transitionDuration: "900ms", transitionProperty: "opacity" } as any,
+              ]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority={i === heroIdx ? "high" : "low"}
+            />
+          ))}
           <LinearGradient
             colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.35)", "rgba(28,28,30,0.85)"]}
             style={StyleSheet.absoluteFill}
@@ -190,6 +199,31 @@ export default function Home() {
             )}
           </View>
         </View>
+
+        {/* AI Tip do dia */}
+        {tip && (
+          <View style={styles.section}>
+            <Pressable style={styles.aiTip} onPress={() => router.push("/(tabs)/chat" as any)} testID="home-ai-tip">
+              <View style={styles.aiTipIcon}>
+                <Ionicons name={(tip.icon || "sparkles") as any} size={22} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.aiTipHead}>
+                  <Text style={styles.aiTipKicker}>DICA IA • {tip.topic?.toUpperCase() || "GUIA"}</Text>
+                  <View style={styles.aiTipBadge}>
+                    <Ionicons name="sparkles" size={9} color="#fff" />
+                    <Text style={styles.aiTipBadgeText}>GEMINI</Text>
+                  </View>
+                </View>
+                <Text style={styles.aiTipText}>{tip.tip}</Text>
+                <View style={styles.aiTipCta}>
+                  <Text style={styles.aiTipCtaText}>Perguntar mais ao Guia Algarve</Text>
+                  <Ionicons name="arrow-forward" size={13} color={colors.brandTertiary} />
+                </View>
+              </View>
+            </Pressable>
+          </View>
+        )}
 
         {/* Trip stats mini dashboard */}
         {stats && (
@@ -611,4 +645,25 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: { height: "100%", borderRadius: 2 },
+
+  // AI tip
+  aiTip: {
+    flexDirection: "row", gap: spacing.md,
+    backgroundColor: colors.brandDark,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadows.medium,
+  },
+  aiTipIcon: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: colors.brandSecondary,
+    alignItems: "center", justifyContent: "center",
+  },
+  aiTipHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+  aiTipKicker: { fontSize: 10, letterSpacing: 1, fontWeight: "800", color: colors.brandTertiary },
+  aiTipBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
+  aiTipBadgeText: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
+  aiTipText: { color: "#fff", fontSize: 13, lineHeight: 19, fontWeight: "500", marginTop: 4 },
+  aiTipCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  aiTipCtaText: { color: colors.brandTertiary, fontSize: 11, fontWeight: "700" },
 });
