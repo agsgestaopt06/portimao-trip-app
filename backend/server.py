@@ -1,0 +1,968 @@
+from fastapi import FastAPI, APIRouter, HTTPException, Query
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+import math
+import logging
+import httpx
+import uuid
+from pathlib import Path
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / ".env")
+
+mongo_url = os.environ["MONGO_URL"]
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ["DB_NAME"]]
+
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="Portimão '26 – Família Sacramento")
+api_router = APIRouter(prefix="/api")
+
+
+# ============ Models ============
+class Expense(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    category: str
+    description: str
+    amount: float
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class ExpenseCreate(BaseModel):
+    category: str
+    description: str
+    amount: float
+
+
+class ChecklistToggle(BaseModel):
+    id: str
+    checked: bool
+
+
+class PhotoCreate(BaseModel):
+    caption: str
+    image_base64: str
+    day: int
+
+
+class Photo(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    caption: str
+    image_base64: str
+    day: int
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class DiaryEntryCreate(BaseModel):
+    title: str
+    content: str
+    day: int
+    mood: str
+
+
+class DiaryEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    day: int
+    mood: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    session_id: str
+
+
+class ShoppingToggle(BaseModel):
+    id: str
+    checked: bool
+
+
+# ============ Static Trip Data ============
+TRIP_INFO = {
+    "destination": "Portimão • Algarve",
+    "start_date": "2026-07-12",
+    "end_date": "2026-07-15",
+    "family": ["Alex (39)", "Priscila (38)", "Alexsandro (11)", "Arthur (5)"],
+    "hotel_name": "Studio 17 by Atlantichotels",
+    "hotel_address": "Rua João Simões Tavares 17, Urb. Alto do Quintão, Portimão 8500-293",
+    "check_in": "12 Jul • ~16:00",
+    "check_out": "15 Jul • 11:00",
+    "budget_min": 250,
+    "budget_max": 290,
+}
+
+ITINERARY = [
+    {"day": 1, "date": "12 Julho", "weekday": "Domingo", "title": "Chegada tranquila", "subtitle": "Lisboa → Portimão • Descompressão",
+     "events": [
+         {"time": "16:05", "title": "FlixBus • Lisboa Oriente", "description": "Embarque com bilhetes digitais. Lugares janela reservados.", "icon": "bus", "highlight": False},
+         {"time": "19:15", "title": "Chegada a Portimão", "description": "Bolt/táxi até Studio 17 (€6-10 • 10-15 min).", "icon": "location", "highlight": False},
+         {"time": "20:00", "title": "Check-in Studio 17", "description": "€24 taxa turística + €200 caução (cartão). Pedir upgrade!", "icon": "home", "highlight": True},
+         {"time": "21:00", "title": "Jantar leve no apartamento", "description": "Self-catering — poupança inicial 💰", "icon": "restaurant", "highlight": True},
+     ]},
+    {"day": 2, "date": "13 Julho", "weekday": "Segunda", "title": "Praia + Grutas de Benagil", "subtitle": "O dia mais épico da viagem",
+     "events": [
+         {"time": "09:30", "title": "Praia da Rocha", "description": "Castelos de areia, banhos, brincadeiras (até 13h00).", "icon": "sunny", "highlight": False},
+         {"time": "13:00", "title": "Almoço com vista", "description": "La Gioconda — pizzas €13,50-15,50.", "icon": "pizza", "highlight": False},
+         {"time": "15:00", "title": "Grutas de Benagil 🌊", "description": "Tour de barco small-group ~€30/pessoa. Levar câmara!", "icon": "boat", "highlight": True},
+         {"time": "19:30", "title": "Jantar relaxado", "description": "Self-catering no apartamento — recuperar do sol.", "icon": "restaurant", "highlight": False},
+     ]},
+    {"day": 3, "date": "14 Julho", "weekday": "Terça", "title": "Exploração flexível", "subtitle": "Alvor ou mais praia • Jantar especial",
+     "events": [
+         {"time": "10:00", "title": "Vai e Vem para Alvor", "description": "Linha 14 (~€1,60-2,50). Alvor tem praia super calma para o Arthur.", "icon": "bus", "highlight": False},
+         {"time": "13:00", "title": "Almoço tradicional", "description": "Peixe grelhado numa tasca local €14-18/pessoa.", "icon": "fish", "highlight": False},
+         {"time": "16:00", "title": "Gelados na marginal", "description": "€3-4,50 cada. Ritmo lento e fotos ao pôr do sol.", "icon": "ice-cream", "highlight": False},
+         {"time": "20:00", "title": "Jantar especial: W-Wine", "description": "Food & Friends — Mediterrânea €20-25/pessoa.", "icon": "wine", "highlight": True},
+     ]},
+    {"day": 4, "date": "15 Julho", "weekday": "Quarta", "title": "Regresso organizado", "subtitle": "Últimos momentos • Volta a Lisboa",
+     "events": [
+         {"time": "09:00", "title": "Pequeno-almoço no apartamento", "description": "Terminar mantimentos comprados no Continente.", "icon": "cafe", "highlight": False},
+         {"time": "10:00", "title": "Último passeio curto", "description": "Fotos finais na marginal da Praia da Rocha.", "icon": "camera", "highlight": False},
+         {"time": "11:00", "title": "Check-out Studio 17", "description": "Bolt até terminal de autocarros (~€6-8).", "icon": "log-out", "highlight": False},
+         {"time": "13:40", "title": "FlixBus • Regresso", "description": "Portimão → Lisboa Oriente. Chegada ~17:00.", "icon": "bus", "highlight": True},
+     ]},
+]
+
+# Enhanced restaurants with photos, menu, promo, distance-from-hotel (walking min)
+RESTAURANTS = [
+    {
+        "id": "la-gioconda",
+        "name": "La Gioconda",
+        "type": "Pizzaria & Trattoria",
+        "price_range": "€14-18/pessoa",
+        "price_avg": 16,
+        "rating": 4.6,
+        "reviews": 1243,
+        "highlights": "Pizzas €13,50-15,50 (Margherita, Terrazza). Esplanada com vista Praia da Rocha.",
+        "recommended_for": "Almoço Dia 2 com crianças",
+        "image_key": "pizza",
+        "image_url": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Pizza Margherita", "price": "€13,50"},
+            {"name": "Pizza Terrazza (fiambre + funghi)", "price": "€15,50"},
+            {"name": "Lasagna della casa", "price": "€12,00"},
+        ],
+        "promo": "Menu do dia até 15h — pizza + bebida €11,90",
+        "tags": ["kids-friendly", "vista-mar", "menu-do-dia"],
+        "location_id": "la-gioconda",
+        "latitude": 37.1170, "longitude": -8.5385,
+    },
+    {
+        "id": "squash",
+        "name": "Restaurante Squash",
+        "type": "Internacional",
+        "price_range": "€18-22/pessoa",
+        "price_avg": 20,
+        "rating": 4.5,
+        "reviews": 892,
+        "highlights": "Muito bem avaliado. Boa variedade para família.",
+        "recommended_for": "Jantar variado",
+        "image_key": "international",
+        "image_url": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Bacalhau à Brás", "price": "€16,00"},
+            {"name": "Frango da casa", "price": "€14,00"},
+            {"name": "Bife da vazia com molho pimenta", "price": "€19,50"},
+        ],
+        "promo": None,
+        "tags": ["kids-friendly", "vegetariano"],
+        "location_id": "la-gioconda",
+        "latitude": 37.1195, "longitude": -8.5390,
+    },
+    {
+        "id": "w-wine",
+        "name": "W – Wine, Food & Friends",
+        "type": "Mediterrânea",
+        "price_range": "€20-25/pessoa",
+        "price_avg": 23,
+        "rating": 4.8,
+        "reviews": 654,
+        "highlights": "Excelente qualidade. Ambiente elegante.",
+        "recommended_for": "Jantar especial Dia 3",
+        "image_key": "mediterranean",
+        "image_url": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Polvo à lagareiro", "price": "€22,00"},
+            {"name": "Risoto de camarão", "price": "€19,50"},
+            {"name": "Vinho da casa (copo)", "price": "€3,50"},
+        ],
+        "promo": "Happy hour 18-20h — vinho €2",
+        "tags": ["vista-mar", "especial", "vegetariano"],
+        "location_id": "w-wine",
+        "latitude": 37.1362, "longitude": -8.5425,
+    },
+    {
+        "id": "tradicional",
+        "name": "O Viriato",
+        "type": "Português tradicional",
+        "price_range": "€15-20/pessoa",
+        "price_avg": 17,
+        "rating": 4.7,
+        "reviews": 511,
+        "highlights": "Peixe grelhado €14-18. Cataplana €28-38 (2 pessoas).",
+        "recommended_for": "Sabores autênticos",
+        "image_key": "portuguese",
+        "image_url": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Peixe grelhado do dia", "price": "€16,00"},
+            {"name": "Cataplana (2 pax)", "price": "€32,00"},
+            {"name": "Arroz de marisco", "price": "€18,00"},
+        ],
+        "promo": "Cataplana para 2 — €32 (poupança €6 vs. peixe individual x2)",
+        "tags": ["tradicional", "familiar"],
+        "location_id": "la-gioconda",
+        "latitude": 37.1180, "longitude": -8.5378,
+    },
+    {
+        "id": "self-catering",
+        "name": "Cozinha Studio 17",
+        "type": "Self-Catering (HACK)",
+        "price_range": "€8-12/refeição família",
+        "price_avg": 10,
+        "rating": 5.0,
+        "reviews": None,
+        "highlights": "Continente perto: leite, pão, fruta, iogurtes, fiambre, água. Poupança €80-120.",
+        "recommended_for": "Pequenos-almoços e jantares leves",
+        "image_key": "market",
+        "image_url": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80",
+        "menu": [
+            {"name": "Pequeno-almoço família", "price": "~€6"},
+            {"name": "Sandwich + fruta", "price": "~€8"},
+            {"name": "Massa + molho + salada", "price": "~€10"},
+        ],
+        "promo": "Hack de ouro — €80-120 poupança na viagem",
+        "tags": ["hack", "kids-friendly"],
+        "location_id": "hotel",
+        "latitude": 37.1400, "longitude": -8.5450,
+    },
+]
+
+HACKS = [
+    {"id": "self-cater", "title": "Cozinha do Studio 17", "description": "Compras no Continente logo no Dia 1. Pequeno-almoço + jantares leves = poupança de €80-120 na viagem inteira.", "savings": "€80-120", "icon": "cart", "category": "Comida"},
+    {"id": "benagil-smallgroup", "title": "Benagil Small-Group", "description": "Tour small-group (não grande barco). Melhor relação qualidade/preço. Mais tempo dentro da gruta.", "savings": "€40-60", "icon": "boat", "category": "Atividades"},
+    {"id": "bolt-vaivem", "title": "Bolt + Vai e Vem", "description": "Bolt só quando necessário com crianças cansadas. Vai e Vem (Linha 14) para Alvor por €1,60.", "savings": "€25-40", "icon": "car", "category": "Transporte"},
+    {"id": "upgrade-quarto", "title": "Peçam upgrade do quarto", "description": "No check-in, pergunta simpaticamente 'há upgrade disponível?'. Fora do fim-de-semana, às vezes dão grátis.", "savings": "Grátis 🎁", "icon": "sparkles", "category": "Alojamento"},
+    {"id": "praia-timing", "title": "Praia antes das 11h", "description": "Chegar cedo à Praia da Rocha = melhor sítio no areal + sol menos agressivo para o Arthur (5).", "savings": "Conforto máximo", "icon": "sunny", "category": "Praia"},
+    {"id": "spf-agua", "title": "SPF50+ e água constante", "description": "Reaplicar protetor a cada 2h. Água a cada 30min para as crianças. Chapéu obrigatório.", "savings": "Saúde", "icon": "water", "category": "Segurança"},
+    {"id": "esplanada-timing", "title": "Esplanadas fora do rush", "description": "Café/pastel de nata €1,90-2,50. Ir 10h-12h ou 15h-17h para evitar filas.", "savings": "€10-20", "icon": "cafe", "category": "Comida"},
+    {"id": "flixbus-hack", "title": "FlixBus na app", "description": "Bilhete digital, chegar 30-40 min antes, lugares janela. Powerbank + tablet offline para as crianças.", "savings": "Já reservado", "icon": "phone-portrait", "category": "Transporte"},
+]
+
+KIDS_ACTIVITIES = [
+    {"id": "castelos", "title": "Castelos de areia", "description": "Clássico e viciante. Balde + pá + moldes na mala.", "icon": "construct", "age_range": "5+ e 11+"},
+    {"id": "caca-tesouro", "title": "Caça ao tesouro", "description": "Conchas, pedras coloridas, caranguejos escondidos.", "icon": "search", "age_range": "5+ e 11+"},
+    {"id": "bola-frisbee", "title": "Bola / Frisbee", "description": "Alexsandro (11) mais ativo. Arthur (5) brinca ao lado.", "icon": "football", "age_range": "Toda a família"},
+    {"id": "agua-rasa", "title": "Brincadeiras na água rasa", "description": "Chapinhar e fazer castelos de água. Sempre com supervisão.", "icon": "water", "age_range": "5+ com supervisão"},
+    {"id": "rochas", "title": "Exploração nas rochas", "description": "Poças e peixinhos. Só com adulto ao lado.", "icon": "leaf", "age_range": "11+ (ou 5+ com adulto)"},
+    {"id": "gelado", "title": "Gelado na marginal", "description": "Recompensa final do dia. Todos ganham.", "icon": "ice-cream", "age_range": "Toda a família"},
+]
+
+CHECKLIST_DEFAULT = [
+    {"id": "spf50", "label": "Protetor solar FPS50+ (essencial)", "category": "Proteção"},
+    {"id": "chapeus", "label": "Chapéus para todos", "category": "Proteção"},
+    {"id": "oculos", "label": "Óculos de sol (4)", "category": "Proteção"},
+    {"id": "fatos-banho", "label": "Fatos de banho x2 por pessoa", "category": "Praia"},
+    {"id": "kit-praia", "label": "Kit de praia (balde, pá, moldes)", "category": "Praia"},
+    {"id": "toalhas", "label": "Toalhas de praia", "category": "Praia"},
+    {"id": "guarda-sol", "label": "Guarda-sol (ou alugar €10/dia)", "category": "Praia"},
+    {"id": "lanches", "label": "Lanches + água (autocarro)", "category": "Viagem"},
+    {"id": "powerbank", "label": "Powerbank carregado", "category": "Viagem"},
+    {"id": "tablets", "label": "Tablets com jogos/vídeos offline", "category": "Viagem"},
+    {"id": "flixbus", "label": "Bilhetes FlixBus no telemóvel", "category": "Viagem"},
+    {"id": "medicamentos", "label": "Medicamentos básicos + tiritas", "category": "Saúde"},
+    {"id": "docs", "label": "Documentos de identificação", "category": "Documentos"},
+    {"id": "cartao-cheq", "label": "€24 taxa turística + €200 caução (cartão)", "category": "Documentos"},
+    {"id": "reservas", "label": "Confirmação Studio 17 + FlixBus", "category": "Documentos"},
+    {"id": "roupa-fresca", "label": "Roupa fresca (28-32°C esperado)", "category": "Roupa"},
+    {"id": "sapatilhas", "label": "Sapatilhas confortáveis", "category": "Roupa"},
+    {"id": "chinelos", "label": "Chinelos para praia", "category": "Roupa"},
+    {"id": "apps", "label": "Apps: FlixBus, Bolt, Google Maps", "category": "Digital"},
+    {"id": "benagil", "label": "Reservar tour de Benagil", "category": "Atividades"},
+]
+
+MAP_LOCATIONS = [
+    {"id": "hotel", "name": "Studio 17 by Atlantichotels", "category": "Hospedagem", "latitude": 37.1400, "longitude": -8.5450, "description": "A nossa base • cozinha completa", "icon": "home"},
+    {"id": "praia-rocha", "name": "Praia da Rocha", "category": "Praia", "latitude": 37.1157, "longitude": -8.5372, "description": "Areal enorme • castelos de areia", "icon": "sunny"},
+    {"id": "marina", "name": "Marina de Portimão", "category": "Ponto de partida", "latitude": 37.1236, "longitude": -8.5311, "description": "Barcos para Benagil", "icon": "boat"},
+    {"id": "benagil", "name": "Grutas de Benagil", "category": "Atividade principal", "latitude": 37.0879, "longitude": -8.4272, "description": "A gruta mais famosa do mundo 🌊", "icon": "compass"},
+    {"id": "la-gioconda", "name": "La Gioconda", "category": "Restaurante", "latitude": 37.1170, "longitude": -8.5385, "description": "Pizzaria com vista • €14-18", "icon": "pizza"},
+    {"id": "w-wine", "name": "W – Wine, Food & Friends", "category": "Restaurante", "latitude": 37.1362, "longitude": -8.5425, "description": "Jantar especial Dia 3", "icon": "wine"},
+    {"id": "alvor", "name": "Alvor (Vai e Vem L14)", "category": "Exploração", "latitude": 37.1289, "longitude": -8.5945, "description": "Praia calma • ideal para Arthur", "icon": "leaf"},
+    {"id": "continente", "name": "Continente Portimão", "category": "Compras (Hack)", "latitude": 37.1391, "longitude": -8.5401, "description": "Mantimentos self-catering", "icon": "cart"},
+]
+
+LOC_BY_ID = {l["id"]: l for l in MAP_LOCATIONS}
+
+# ---- Bus schedule (Fase 1 hardcoded — Vai e Vem Portimão) ----
+# Real Vai e Vem lines from Portimão city bus (linhas 12, 14, 15, 16).
+# Each line has a list of stops and departure times (HH:MM) from origin.
+BUS_LINES = {
+    "12": {
+        "name": "L12 • Praia da Rocha ↔ Alto do Quintão",
+        "color": "#1D8086",
+        "stops": ["alto-quintao", "hotel", "praia-rocha", "marina"],
+        # Frequency-based schedule: departures every 30 min from 07:00 to 23:00
+        "departures": [f"{h:02d}:{m:02d}" for h in range(7, 23) for m in (0, 30)],
+    },
+    "14": {
+        "name": "L14 • Portimão ↔ Alvor",
+        "color": "#D96C4E",
+        "stops": ["hotel", "continente", "alvor"],
+        "departures": [f"{h:02d}:{m:02d}" for h in range(7, 22) for m in (10, 40)],
+    },
+    "15": {
+        "name": "L15 • Centro ↔ Ferragudo",
+        "color": "#457B9D",
+        "stops": ["hotel", "marina", "praia-rocha"],
+        "departures": [f"{h:02d}:{m:02d}" for h in range(7, 22) for m in (5, 25, 45)],
+    },
+    "16": {
+        "name": "L16 • Estação ↔ Praia da Rocha",
+        "color": "#2A9D8F",
+        "stops": ["hotel", "continente", "marina", "praia-rocha"],
+        "departures": [f"{h:02d}:{m:02d}" for h in range(6, 24) for m in (15, 45)],
+    },
+}
+
+# ---- Shopping default list ----
+SHOPPING_DEFAULT = [
+    # (id, category, name, brand_note, price)
+    ("shp-leite", "essenciais", "Leite meio-gordo 1L", "Continente", 0.99),
+    ("shp-pao", "essenciais", "Pão de forma", "Bimbo", 2.29),
+    ("shp-iogurte", "essenciais", "Iogurtes pack 8", "Actimel", 4.49),
+    ("shp-manteiga", "essenciais", "Manteiga 250g", "Mimosa", 2.89),
+    ("shp-agua", "praia", "Água 6x1.5L", "Água mineral", 2.49),
+    ("shp-fruta", "praia", "Fruta variada", "Uvas, banana, maçã", 6.00),
+    ("shp-bolachas", "praia", "Bolachas Belga (Arthur)", "", 1.79),
+    ("shp-massa", "jantares", "Massa 500g", "Milaneza", 0.89),
+    ("shp-molho", "jantares", "Molho tomate", "Guloso", 0.99),
+    ("shp-fiambre", "jantares", "Fiambre + queijo fatiado", "", 4.50),
+    ("shp-ovos", "jantares", "Ovos pack 6", "", 1.79),
+    ("shp-spf", "extras", "Protetor SPF50+ criança", "se falhou checklist", 8.50),
+    ("shp-gelo", "extras", "Saco de gelo (frigo)", "", 1.50),
+]
+
+
+# ============ Startup: seed DB ============
+@app.on_event("startup")
+async def startup_seed():
+    try:
+        # Checklist
+        if await db.checklist.count_documents({}) == 0:
+            for item in CHECKLIST_DEFAULT:
+                await db.checklist.insert_one({**item, "checked": False})
+        # Shopping
+        if await db.shopping.count_documents({}) == 0:
+            for (sid, cat, name, note, price) in SHOPPING_DEFAULT:
+                await db.shopping.insert_one({
+                    "id": sid, "category": cat, "name": name, "note": note,
+                    "price": price, "checked": False,
+                })
+        logger.info("Startup seed complete")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Startup seed skipped: %s", e)
+
+
+# ============ Utility functions ============
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def now_lisbon() -> datetime:
+    # Portugal is WEST/UTC+0 in winter, UTC+1 in summer. For 12-15 July → UTC+1.
+    # Use UTC+1 approximation (safer than tzdata for containers).
+    return datetime.now(timezone.utc) + timedelta(hours=1)
+
+
+def next_departure(line_id: str, from_time: Optional[datetime] = None) -> Optional[dict]:
+    """Return next departure time & minutes-until for a line, given local time."""
+    line = BUS_LINES.get(line_id)
+    if not line:
+        return None
+    now = from_time or now_lisbon()
+    now_hm = now.hour * 60 + now.minute
+    for dep in line["departures"]:
+        h, m = map(int, dep.split(":"))
+        dep_hm = h * 60 + m
+        if dep_hm >= now_hm:
+            return {"time": dep, "minutes_until": dep_hm - now_hm}
+    # No more today — first departure tomorrow
+    first = line["departures"][0]
+    h, m = map(int, first.split(":"))
+    dep_hm = h * 60 + m + 24 * 60
+    return {"time": first + " (amanhã)", "minutes_until": dep_hm - now_hm}
+
+
+def lines_serving_stop(stop_id: str) -> List[str]:
+    return [lid for lid, l in BUS_LINES.items() if stop_id in l["stops"]]
+
+
+# ============ Endpoints ============
+@api_router.get("/")
+async def root():
+    return {"app": "Portimão '26 – Família Sacramento", "status": "ok"}
+
+
+@api_router.get("/trip")
+async def get_trip():
+    return TRIP_INFO
+
+
+@api_router.get("/itinerary")
+async def get_itinerary():
+    return ITINERARY
+
+
+@api_router.get("/restaurants")
+async def get_restaurants():
+    # Add walking distance from hotel (Studio 17)
+    hotel = LOC_BY_ID["hotel"]
+    out = []
+    for r in RESTAURANTS:
+        km = haversine_km(hotel["latitude"], hotel["longitude"], r["latitude"], r["longitude"])
+        walk_min = max(1, int(round(km * 12)))  # ~12 min/km
+        out.append({**r, "distance_km": round(km, 2), "walk_min": walk_min})
+    return out
+
+
+@api_router.get("/hacks")
+async def get_hacks():
+    return HACKS
+
+
+@api_router.get("/kids-activities")
+async def get_kids_activities():
+    return KIDS_ACTIVITIES
+
+
+@api_router.get("/map-locations")
+async def get_map_locations():
+    return MAP_LOCATIONS
+
+
+# ---- Budget ----
+@api_router.get("/budget/expenses")
+async def list_expenses():
+    docs = await db.expenses.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    total = sum(d["amount"] for d in docs)
+    return {
+        "expenses": docs, "total_spent": round(total, 2),
+        "budget_min": TRIP_INFO["budget_min"], "budget_max": TRIP_INFO["budget_max"],
+    }
+
+
+@api_router.post("/budget/expenses")
+async def add_expense(payload: ExpenseCreate):
+    exp = Expense(**payload.dict())
+    await db.expenses.insert_one(exp.dict())
+    return exp
+
+
+@api_router.delete("/budget/expenses/{expense_id}")
+async def delete_expense(expense_id: str):
+    result = await db.expenses.delete_one({"id": expense_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": expense_id}
+
+
+# ---- Checklist ----
+@api_router.get("/checklist")
+async def get_checklist():
+    return await db.checklist.find({}, {"_id": 0}).to_list(500)
+
+
+@api_router.post("/checklist/toggle")
+async def toggle_checklist(payload: ChecklistToggle):
+    await db.checklist.update_one({"id": payload.id}, {"$set": {"checked": payload.checked}})
+    return await db.checklist.find_one({"id": payload.id}, {"_id": 0})
+
+
+# ---- Photos ----
+@api_router.get("/gallery")
+async def list_photos():
+    return await db.photos.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+
+@api_router.post("/gallery")
+async def add_photo(payload: PhotoCreate):
+    photo = Photo(**payload.dict())
+    await db.photos.insert_one(photo.dict())
+    return photo
+
+
+@api_router.delete("/gallery/{photo_id}")
+async def delete_photo(photo_id: str):
+    result = await db.photos.delete_one({"id": photo_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": photo_id}
+
+
+# ---- Diary ----
+@api_router.get("/diary")
+async def list_diary():
+    return await db.diary.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+
+@api_router.post("/diary")
+async def add_diary(payload: DiaryEntryCreate):
+    entry = DiaryEntry(**payload.dict())
+    await db.diary.insert_one(entry.dict())
+    return entry
+
+
+@api_router.delete("/diary/{entry_id}")
+async def delete_diary(entry_id: str):
+    result = await db.diary.delete_one({"id": entry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": entry_id}
+
+
+# ============ NEW SPRINT 1 ENDPOINTS ============
+
+# ---- Smart Go ----
+@api_router.get("/smart-go")
+async def smart_go(from_id: str = Query(..., alias="from"), to_id: str = Query(..., alias="to")):
+    src = LOC_BY_ID.get(from_id)
+    dst = LOC_BY_ID.get(to_id)
+    if not src or not dst:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    km = haversine_km(src["latitude"], src["longitude"], dst["latitude"], dst["longitude"])
+    walk_min = int(round(km * 12))  # ~12 min/km
+    bolt_eur = round(3 + km * 1.5, 2)  # €3 base + €1.5/km heuristic
+
+    # Next bus: pick a line that serves both src and dst if any, else src
+    common_lines = [lid for lid, l in BUS_LINES.items()
+                    if from_id in l["stops"] and to_id in l["stops"]]
+    src_lines = lines_serving_stop(from_id) or []
+    picked = None
+    line_id = None
+    if common_lines:
+        line_id = common_lines[0]
+        picked = next_departure(line_id)
+    elif src_lines:
+        line_id = src_lines[0]
+        picked = next_departure(line_id)
+
+    bus = None
+    if line_id and picked:
+        bus = {
+            "line_id": line_id,
+            "line_name": BUS_LINES[line_id]["name"],
+            "color": BUS_LINES[line_id]["color"],
+            "next_time": picked["time"],
+            "minutes_until": picked["minutes_until"],
+            "direct": from_id in BUS_LINES[line_id]["stops"] and to_id in BUS_LINES[line_id]["stops"],
+        }
+
+    # 3 nearby POIs to destination (excluding dst and src)
+    pois = []
+    for loc in MAP_LOCATIONS:
+        if loc["id"] in (from_id, to_id):
+            continue
+        d = haversine_km(dst["latitude"], dst["longitude"], loc["latitude"], loc["longitude"])
+        pois.append({**loc, "distance_km": round(d, 2)})
+    pois.sort(key=lambda x: x["distance_km"])
+
+    # Google Maps deep link
+    maps_url = f"https://maps.google.com/?saddr={src['latitude']},{src['longitude']}&daddr={dst['latitude']},{dst['longitude']}"
+
+    return {
+        "from": src, "to": dst,
+        "distance_km": round(km, 2),
+        "walking": {"minutes": walk_min, "label": f"{walk_min} min a pé"},
+        "bolt": {"eur": bolt_eur, "label": f"~€{bolt_eur:.2f} • ~{max(1, int(km*2))} min"},
+        "bus": bus,
+        "nearby": pois[:3],
+        "maps_url": maps_url,
+    }
+
+
+# ---- Briefings (contextual reminders) ----
+def build_briefings(now: Optional[datetime] = None) -> List[dict]:
+    """Deterministic time-based cards."""
+    now = now or now_lisbon()
+    items: List[dict] = []
+
+    # Trip dates: 12-15 July 2026
+    day1 = datetime(2026, 7, 12, 0, 0, tzinfo=timezone.utc)
+    day2 = datetime(2026, 7, 13, 0, 0, tzinfo=timezone.utc)
+    day3 = datetime(2026, 7, 14, 0, 0, tzinfo=timezone.utc)
+    day4 = datetime(2026, 7, 15, 0, 0, tzinfo=timezone.utc)
+
+    def days_until(target: datetime) -> int:
+        return (target.date() - now.date()).days
+
+    # 1. Check-in reminder (Day 1, 14h-20h) — always show BEFORE arrival too as preview
+    du1 = days_until(day1)
+    if du1 >= 0:
+        pre_arrival = du1 > 0
+        items.append({
+            "id": "briefing-checkin",
+            "priority": 1 if du1 == 0 or du1 == 1 else 3,
+            "icon": "card",
+            "tone": "warning" if not pre_arrival else "info",
+            "title": "Check-in Studio 17 — Prepara",
+            "body": "💳 €24 taxa turística + €200 caução (cartão). Confirma o nome. Pede upgrade — pergunta 'há upgrade disponível?' (às vezes dão grátis fora do fim-de-semana).",
+            "cta": {"label": "Ver hack de upgrade", "route": "/hacks"},
+            "when": "Domingo 12 Jul • ~16h",
+        })
+
+    # 2. Continente / Mercado — show if in trip window
+    if du1 <= 0 and (now < day4):
+        items.append({
+            "id": "briefing-mercado",
+            "priority": 2,
+            "icon": "cart",
+            "tone": "info",
+            "title": "Continente fecha às 22h",
+            "body": "🛒 Passa hoje no Continente para pequenos-almoços e jantares leves. Poupança €80-120 na viagem inteira.",
+            "cta": {"label": "Ver lista de compras", "route": "/shopping"},
+            "when": "Todos os dias • 18h30",
+        })
+
+    # 3. Benagil (Day 2 morning)
+    du2 = days_until(day2)
+    if 0 <= du2 <= 1:
+        items.append({
+            "id": "briefing-benagil",
+            "priority": 1 if du2 == 0 else 3,
+            "icon": "boat",
+            "tone": "brand",
+            "title": "Benagil hoje!" if du2 == 0 else "Amanhã: Grutas de Benagil",
+            "body": "🌊 Tour de barco às 15h. Não esquecer: SPF50+, câmara, bilhete no telemóvel, powerbank.",
+            "cta": {"label": "Smart Go até à Marina", "smart_go": {"from": "hotel", "to": "marina"}},
+            "when": "Segunda 13 Jul • 15h",
+        })
+
+    # 4. Alvor (Day 3 morning)
+    du3 = days_until(day3)
+    if 0 <= du3 <= 1:
+        # Next bus L14 towards Alvor
+        picked = next_departure("14")
+        bus_txt = f"Próximo em {picked['minutes_until']} min" if picked else "Confirma na paragem"
+        items.append({
+            "id": "briefing-alvor",
+            "priority": 1 if du3 == 0 else 3,
+            "icon": "bus",
+            "tone": "info",
+            "title": "Vai e Vem L14 → Alvor",
+            "body": f"🚌 {bus_txt}. Praia calma ideal para o Arthur. Bilhete €1,60-2,50 pago no autocarro.",
+            "cta": {"label": "Smart Go até Alvor", "smart_go": {"from": "hotel", "to": "alvor"}},
+            "when": "Terça 14 Jul • 10h",
+        })
+
+    # 5. Check-out (Day 4)
+    du4 = days_until(day4)
+    if 0 <= du4 <= 1:
+        items.append({
+            "id": "briefing-checkout",
+            "priority": 1 if du4 == 0 else 3,
+            "icon": "log-out",
+            "tone": "warning",
+            "title": "Check-out às 11h",
+            "body": "⏰ Bolt até estação de autocarros (~€6-8, 15 min). Terminar mantimentos ao pequeno-almoço.",
+            "cta": {"label": "Ver bilhete FlixBus volta", "route": "/tickets"},
+            "when": "Quarta 15 Jul • 11h",
+        })
+
+    # 6. Weather-based (UV / rain) — only if trip active, checked async
+    # (populated by /briefings endpoint that also calls weather)
+
+    # Sort by priority
+    items.sort(key=lambda x: x["priority"])
+    return items
+
+
+@api_router.get("/briefings")
+async def get_briefings():
+    items = build_briefings()
+    # Add weather alerts by calling weather
+    try:
+        weather = await fetch_weather()
+        uv = weather.get("uv_max", 0) or 0
+        rain = weather.get("rain_chance", 0) or 0
+        if uv >= 8:
+            items.append({
+                "id": "briefing-uv",
+                "priority": 2,
+                "icon": "sunny",
+                "tone": "warning",
+                "title": f"UV extremo hoje ({uv})",
+                "body": "☀️ Reaplicar SPF cada 90 min. Chapéu obrigatório. Evitar praia 12h-16h com crianças.",
+                "cta": {"label": "Ver hacks de segurança", "route": "/hacks"},
+                "when": "Hoje",
+            })
+        if rain >= 40:
+            items.append({
+                "id": "briefing-rain",
+                "priority": 2,
+                "icon": "rainy",
+                "tone": "info",
+                "title": f"Chuva prevista ({rain}%)",
+                "body": "🌧️ Plano B: mercado municipal + almoço numa tasca + gelados na marginal quando parar.",
+                "cta": {"label": "Ver hacks", "route": "/hacks"},
+                "when": "Hoje",
+            })
+    except Exception:  # noqa: BLE001
+        pass
+    items.sort(key=lambda x: x["priority"])
+    return {"items": items, "now": now_lisbon().isoformat()}
+
+
+# ---- Bus schedule ----
+@api_router.get("/bus/schedule")
+async def bus_schedule():
+    now = now_lisbon()
+    result = []
+    for lid, line in BUS_LINES.items():
+        nxt = next_departure(lid, now)
+        result.append({
+            "id": lid,
+            "name": line["name"],
+            "color": line["color"],
+            "stops": [{"id": s, "name": LOC_BY_ID.get(s, {}).get("name", s)} for s in line["stops"]],
+            "next": nxt,
+        })
+    return {"lines": result, "now": now.strftime("%H:%M")}
+
+
+@api_router.get("/bus/next")
+async def bus_next(stop: str = Query(..., alias="stop")):
+    if stop not in LOC_BY_ID:
+        raise HTTPException(status_code=404, detail="Stop not found")
+    now = now_lisbon()
+    lines = lines_serving_stop(stop)
+    out = []
+    for lid in lines:
+        nxt = next_departure(lid, now)
+        out.append({
+            "line_id": lid,
+            "line_name": BUS_LINES[lid]["name"],
+            "color": BUS_LINES[lid]["color"],
+            "next_time": nxt["time"] if nxt else None,
+            "minutes_until": nxt["minutes_until"] if nxt else None,
+        })
+    out.sort(key=lambda x: x["minutes_until"] if x["minutes_until"] is not None else 9999)
+    return {"stop": LOC_BY_ID[stop], "buses": out, "now": now.strftime("%H:%M")}
+
+
+# ---- Weather (Open-Meteo, no key) ----
+async def fetch_weather() -> dict:
+    """Fetch current + today weather for Portimão via Open-Meteo."""
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": 37.14, "longitude": -8.54,
+        "current": "temperature_2m,weather_code,uv_index",
+        "daily": "temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max,weather_code",
+        "timezone": "Europe/Lisbon",
+        "forecast_days": 4,
+    }
+    async with httpx.AsyncClient(timeout=8.0) as hc:
+        r = await hc.get(url, params=params)
+        r.raise_for_status()
+        data = r.json()
+    daily = data.get("daily", {})
+    current = data.get("current", {})
+    return {
+        "current_temp": current.get("temperature_2m"),
+        "current_uv": current.get("uv_index"),
+        "temp_max": (daily.get("temperature_2m_max") or [None])[0],
+        "temp_min": (daily.get("temperature_2m_min") or [None])[0],
+        "uv_max": (daily.get("uv_index_max") or [None])[0],
+        "rain_chance": (daily.get("precipitation_probability_max") or [None])[0],
+        "weather_code": (daily.get("weather_code") or [None])[0],
+        "daily": {
+            "dates": daily.get("time", []),
+            "temp_max": daily.get("temperature_2m_max", []),
+            "temp_min": daily.get("temperature_2m_min", []),
+            "uv_max": daily.get("uv_index_max", []),
+            "rain_chance": daily.get("precipitation_probability_max", []),
+            "weather_code": daily.get("weather_code", []),
+        },
+    }
+
+
+@api_router.get("/weather")
+async def weather():
+    try:
+        return await fetch_weather()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Weather fetch failed: %s", e)
+        # Fallback static
+        return {
+            "current_temp": 28, "current_uv": 7,
+            "temp_max": 30, "temp_min": 22, "uv_max": 8,
+            "rain_chance": 5, "weather_code": 0,
+            "daily": {"dates": [], "temp_max": [], "temp_min": [], "uv_max": [], "rain_chance": [], "weather_code": []},
+        }
+
+
+# ---- Shopping list ----
+@api_router.get("/shopping")
+async def shopping_list():
+    items = await db.shopping.find({}, {"_id": 0}).to_list(200)
+    total = round(sum(i["price"] for i in items), 2)
+    checked = round(sum(i["price"] for i in items if i.get("checked")), 2)
+    return {"items": items, "total": total, "checked_total": checked}
+
+
+@api_router.post("/shopping/toggle")
+async def shopping_toggle(payload: ShoppingToggle):
+    await db.shopping.update_one({"id": payload.id}, {"$set": {"checked": payload.checked}})
+    return await db.shopping.find_one({"id": payload.id}, {"_id": 0})
+
+
+# ---- Tickets ----
+@api_router.get("/tickets")
+async def tickets():
+    return [
+        {
+            "id": "flixbus-ida", "type": "bus", "icon": "bus",
+            "title": "FlixBus • Lisboa → Portimão",
+            "code": "N4V-2861-XT",
+            "when": "12 Jul 2026 • 16:05",
+            "arrival": "19:15 • Portimão terminal",
+            "seat": "Lugares janela • 18B/18C/19B/19C",
+            "price": "€76,91 família",
+            "color": "#4C1D95",
+        },
+        {
+            "id": "hotel", "type": "hotel", "icon": "bed",
+            "title": "Studio 17 by Atlantichotels",
+            "code": "STD17-1276",
+            "when": "12 Jul → 15 Jul • 3 noites",
+            "arrival": "Rua João Simões Tavares 17, Portimão",
+            "seat": "Studio 4 pax • cozinha completa",
+            "price": "€24 taxa turística + €200 caução (cartão)",
+            "color": "#1D8086",
+        },
+        {
+            "id": "benagil", "type": "activity", "icon": "boat",
+            "title": "Tour Grutas de Benagil (small-group)",
+            "code": "BEN-SG-2603",
+            "when": "13 Jul 2026 • 15:00",
+            "arrival": "Marina de Portimão • duração 2h",
+            "seat": "4 pax • coletes salva-vidas incluídos",
+            "price": "~€30/pessoa • €120 total",
+            "color": "#D96C4E",
+        },
+        {
+            "id": "flixbus-volta", "type": "bus", "icon": "bus",
+            "title": "FlixBus • Portimão → Lisboa",
+            "code": "N4V-2861-RT",
+            "when": "15 Jul 2026 • 13:40",
+            "arrival": "17:00 • Lisboa Oriente",
+            "seat": "Lugares janela • 12B/12C/13B/13C",
+            "price": "Incluído no €76,91",
+            "color": "#4C1D95",
+        },
+    ]
+
+
+# ---- AI Chat (Emergent LLM Key + Gemini) ----
+SYSTEM_PROMPT = """És o "Guia Algarve", um especialista local de agência de viagens premium do Algarve com 20 anos de experiência, focado em famílias com crianças.
+
+CONTEXTO DA VIAGEM:
+- Família Sacramento: Alex (39), Priscila (38), Alexsandro (11), Arthur (5)
+- Portimão • Praia da Rocha • Algarve • 12-15 Julho 2026
+- Studio 17 by Atlantichotels (cozinha completa)
+- FlixBus direto Lisboa Oriente ↔ Portimão (€76,91 família)
+- Grutas de Benagil small-group ~€30/pessoa
+- Orçamento €250-290 com hacks
+
+ESTILO:
+- Português europeu (Portugal), simpático e caloroso mas profissional
+- Respostas curtas (2-5 frases)
+- Dicas concretas de poupança com preços em euros
+- Foco family-friendly (crianças 5 e 11 anos)
+- Emojis moderados (🌊 🏖️ 🍕 💰)
+- Nunca inventar horários/preços — diz "confirma na app oficial" se não souberes
+
+Domínios: praias Algarve, restaurantes Portimão, Vai e Vem/Bolt, Benagil, Alvor, Ferragudo, hacks poupança família, segurança praia crianças, gastronomia PT.
+"""
+
+
+@api_router.post("/chat", response_model=ChatResponse)
+async def chat(payload: ChatRequest):
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+
+    # Persist user message
+    await db.chat_messages.insert_one({
+        "role": "user", "content": payload.message,
+        "session_id": payload.session_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    try:
+        chat_instance = (
+            LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=payload.session_id,
+                system_message=SYSTEM_PROMPT,
+            )
+            .with_model("gemini", "gemini-2.5-flash")
+        )
+        reply_text = await chat_instance.send_message(UserMessage(text=payload.message))
+        reply_text = (reply_text or "").strip()
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Chat error")
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+    await db.chat_messages.insert_one({
+        "role": "assistant", "content": reply_text,
+        "session_id": payload.session_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return ChatResponse(reply=reply_text, session_id=payload.session_id)
+
+
+@api_router.get("/chat/history/{session_id}")
+async def chat_history(session_id: str):
+    return await db.chat_messages.find(
+        {"session_id": session_id}, {"_id": 0, "session_id": 0}
+    ).sort("created_at", 1).to_list(500)
+
+
+# ============ App wiring ============
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
