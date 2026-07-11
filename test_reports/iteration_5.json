@@ -1,0 +1,59 @@
+{
+  "summary": "Iteration 5 — deployment diagnosis fully CONFIRMED. Root cause: the Vercel-hosted frontend correctly bundles the Render backend URL (https://portimao-family-backend.onrender.com), but Render is still running an OLD version of server.py. Live evidence: Render /api/restaurants returns 5 items, /api/beaches, /api/attractions and /api/tickets all return 404. The local /app/backend/server.py has ALL new endpoints (beaches, attractions, hotel_details, ai_tip, trip_stats, emergency, tickets) and the Emergent preview backend returns them correctly (restaurants=17, beaches=10, attractions=12, tickets is a list of 4 with expressos-ida.passengers containing 4 entries). /app/render.yaml is well-formed (rootDir=backend, autoDeploy=true, branch=main, healthCheckPath=/api/). /app/frontend/vercel.json has correct cache-control headers (index.html + / must-revalidate, /_expo/static/js/web/* immutable, /assets/* immutable) and pins EXPO_PUBLIC_BACKEND_URL=https://portimao-family-backend.onrender.com in both buildCommand and build.env. Expo web build succeeds; the produced dist/_expo/static/js/web/*.js bundle contains ONLY portimao-family-backend.onrender.com (no preview URL leakage). MINOR: user prompt said 'should be 18 restaurants' but the current NEW seed has 17 — cosmetic, non-blocking. Deprecated packages / SafeAreaView: none in backend scope (frontend not in review). 18/18 pytest checks pass.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "https://portimao-family-backend.onrender.com/api/*",
+        "issue": "Render production is running OLD code — /api/restaurants=5 (should be 17), /api/beaches=404, /api/attractions=404, /api/tickets=404. Because GitHub token was revoked, latest local commit 0426b82 (with render.yaml + cache headers + new endpoints) was NOT pushed to GitHub main, so Render never auto-deployed. User must (a) restore GitHub push access and push HEAD, or (b) hit 'Manual Deploy → Clear build cache & deploy' in the Render dashboard on the correct branch/commit.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "/api/restaurants (preview)",
+        "issue": "Review request expected 18 restaurants; the seed currently returns 17. Add 1 more entry or update the spec."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Vercel → Render backend calls",
+        "issue": "Frontend bundle points to correct Render URL, but Render itself serves stale code — so from the user's browser the app appears to be 'the old version'. Not a caching issue on Vercel; it's a stale backend deployment.",
+        "affected_testIDs": []
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_deployment_diagnosis.py",
+    "/app/test_reports/pytest/iter5_deployment.xml"
+  ],
+  "action_items": [
+    "USER ACTION (required): push local commit 0426b82 (or newer HEAD) to GitHub main OR trigger a manual redeploy in Render dashboard so the new server.py (with beaches/attractions/tickets/hotel_details/ai_tip/trip_stats/emergency) goes live at https://portimao-family-backend.onrender.com.",
+    "USER ACTION: after Render redeploys, re-run pytest backend/tests/test_deployment_diagnosis.py — the TestRenderProductionOld class should then FAIL (which is the goal — meaning Render is on the new code); rename/repurpose it to assert NEW shape instead.",
+    "OPTIONAL: bring restaurants seed to 18 items (currently 17) to match the spec, or update the docs to say 17.",
+    "OPTIONAL: verify GitHub token/access is restored so Render autoDeploy works going forward.",
+    "NO CODE CHANGE needed to /app/backend/server.py, /app/render.yaml, or /app/frontend/vercel.json — all three are correct and production-ready."
+  ],
+  "critical_code_review_comments": [
+    "render.yaml uses `plan: free` — free plans on Render spin down after 15 min inactivity and cold-start ~30-60s; expect first request after idle to be slow. Consider upgrading if latency matters to end users.",
+    "backend/.env contains EMERGENT_LLM_KEY committed to disk — ensure this file is git-ignored before pushing; Render is configured with sync:false which is correct.",
+    "server.py is >1770 lines — should be split into routers (restaurants.py, beaches.py, tickets.py, chat.py, etc.) per code-review-guideline (files >700 lines).",
+    "vercel.json rewrites `/(.*) → /index.html` is a catch-all — combined with must-revalidate on /index.html this is the correct SPA-cache pattern. Good."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_deployment_diagnosis.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (18/18 pytest)",
+    "frontend": "not-tested (backend-only review)"
+  },
+  "seed_data_creation": "none",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "After the user redeploys Render (via GitHub push or manual redeploy), re-run `pytest /app/backend/tests/test_deployment_diagnosis.py -v`. The TestRenderProductionOld class is designed to PASS while Render is stale — once Render is updated, invert its assertions (or delete the class) and add positive checks matching TestPreviewNewBackend against RENDER_URL. Also verify from a real browser (or `curl -I https://<vercel-app>/index.html`) that the Cache-Control header is `public, max-age=0, must-revalidate`.",
+  "rca_of_issue": "SYMPTOM: Vercel app shows OLD version despite Vercel deploys being 'Ready' (latest cf8c2bf). REPRODUCTION: `curl https://portimao-family-backend.onrender.com/api/restaurants` returns 5 items; `curl .../api/beaches` returns 404. ROOT CAUSE: The Vercel frontend fetches data from the Render backend (correctly configured via EXPO_PUBLIC_BACKEND_URL in vercel.json). Render's service is on an old commit because (a) the GitHub token was revoked, so the latest local commit 0426b82 with new endpoints + render.yaml never reached GitHub main, and (b) Render's auto-deploy therefore never triggered. Vercel is fine; the frontend bundle is fine; Render is stale. MITIGATION: user must either restore GitHub push access and push HEAD, or open Render dashboard → Manual Deploy → 'Clear build cache & deploy' on the desired commit. render.yaml (rootDir=backend, branch=main, autoDeploy=true, healthCheckPath=/api/) is already in the repo, so once the push lands, subsequent deploys will be automatic. vercel.json already has must-revalidate on index.html so any Vercel-side stale-HTML issue is prevented going forward."
+}
