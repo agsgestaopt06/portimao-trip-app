@@ -38,6 +38,7 @@ type R = {
 
 const FILTERS = [
   { id: "all", label: "Todos" },
+  { id: "brasileiro", label: "🇧🇷 Brasileiro" },
   { id: "kids-friendly", label: "Kids-friendly" },
   { id: "vista-mar", label: "Vista mar" },
   { id: "cheap", label: "Até €15/pax" },

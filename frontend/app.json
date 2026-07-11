@@ -5,15 +5,19 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "portimao26",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "description": "A tua viagem de sonho a Portimão — Smart Go, autocarros em tempo real, hacks locais e memórias em família.",
+    "primaryColor": "#1D8086",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.emergent.benagilbudgettrip.bwmq94",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Guardar fotos da vossa viagem a Portimão",
-        "NSCameraUsageDescription": "Tirar fotos das memórias da viagem"
+        "NSPhotoLibraryAddUsageDescription": "Guardar memórias no álbum da viagem",
+        "NSCameraUsageDescription": "Tirar fotos das memórias da viagem",
+        "NSMicrophoneUsageDescription": "Gravar vídeos com áudio"
       }
     },
     "android": {
@@ -23,12 +27,24 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.emergent.benagilbudgettrip.bwmq94",
-      "permissions": ["READ_MEDIA_IMAGES", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Portimão '26 • Família Sacramento",
+      "shortName": "Portimão'26",
+      "themeColor": "#1D8086",
+      "backgroundColor": "#FDFBF7",
+      "display": "standalone",
+      "startUrl": "/",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",
@@ -44,9 +60,19 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Guardar fotos da vossa viagem a Portimão."
+          "photosPermission": "Guardar fotos da vossa viagem a Portimão.",
+          "cameraPermission": "Tirar fotos das memórias da viagem."
         }
-      ]
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Guardar as fotos da viagem no álbum do telemóvel.",
+          "savePhotosPermission": "Guardar as fotos da viagem no álbum do telemóvel.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true
