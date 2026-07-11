@@ -53,7 +53,6 @@ async def llm_generate(prompt: str, system: str = "", max_tokens: int = 400, ses
             chat_instance = (
                 LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id, system_message=system or "")
                 .with_model("gemini", "gemini-2.5-flash")
-                .with_max_tokens(max_tokens)
             )
             reply = await chat_instance.send_message(UserMessage(text=prompt))
             return (reply or "").strip()
