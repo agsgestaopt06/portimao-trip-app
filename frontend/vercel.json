@@ -1,0 +1,14 @@
+{
+  "buildCommand": "EXPO_PUBLIC_BACKEND_URL=https://portimao-family-backend.onrender.com yarn install && EXPO_PUBLIC_BACKEND_URL=https://portimao-family-backend.onrender.com npx expo export --platform web --output-dir dist",
+  "outputDirectory": "dist",
+  "installCommand": "yarn install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "build": {
+    "env": {
+      "EXPO_PUBLIC_BACKEND_URL": "https://portimao-family-backend.onrender.com"
+    }
+  }
+}
