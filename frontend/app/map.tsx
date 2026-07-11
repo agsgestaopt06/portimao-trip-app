@@ -118,14 +118,16 @@ export default function MapScreen() {
                   <Text style={styles.desc}>{l.description}</Text>
                 </View>
               </Pressable>
-              <Pressable
-                style={styles.smartGoBtn}
-                onPress={() => setSmartGoTo(l.id)}
-                testID={`loc-smart-${l.id}`}
-              >
-                <Ionicons name="compass" size={16} color="#fff" />
-                <Text style={styles.smartGoText}>Bora lá</Text>
-              </Pressable>
+              {l.id !== "hotel" && (
+                <Pressable
+                  style={styles.smartGoBtn}
+                  onPress={() => setSmartGoTo(l.id)}
+                  testID={`loc-smart-${l.id}`}
+                >
+                  <Ionicons name="compass" size={16} color="#fff" />
+                  <Text style={styles.smartGoText}>Bora lá</Text>
+                </Pressable>
+              )}
             </View>
           </Animated.View>
         ))}
