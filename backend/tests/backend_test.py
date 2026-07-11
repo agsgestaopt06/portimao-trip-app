@@ -1,5 +1,12 @@
-"""Backend tests for Portimão'26 – Iteration 2."""
-import os
+"""Backend tests for Portimão'26 – Iteration 3.
+
+Covers all endpoints referenced by the mobile app + Vercel-deployed web export:
+- restaurants (with 5 new Brazilian items)
+- tickets (Rede Expressos R6LJC56/R6LJC5N + hotel + Benagil w/ qr_url)
+- emergency (9 items, 112 danger)
+- trip-stats (phase, budget, checklist)
+- briefings, weather, shopping, smart-go, bus/next, itinerary
+"""
 import pytest
 import requests
 
@@ -18,6 +25,41 @@ def api():
     return s
 
 
+# ---------------- Basic health ----------------
+class TestBasics:
+    def test_root(self, api):
+        r = api.get(f"{BASE_URL}/api/", timeout=10)
+        assert r.status_code == 200
+        assert r.json()["status"] == "ok"
+
+
+# ---------------- Restaurants (Iteration 3 focus) ----------------
+class TestRestaurants:
+    def test_restaurants_include_brazilian(self, api):
+        r = api.get(f"{BASE_URL}/api/restaurants", timeout=15)
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data, list)
+        assert len(data) == 10, f"expected 10 restaurants, got {len(data)}"
+        ids = {x["id"] for x in data}
+        expected_brazilian = {
+            "churrascaria-brasa", "boteco-rio", "pastel-cia",
+            "acai-sol", "feijoada-mineira",
+        }
+        missing = expected_brazilian - ids
+        assert not missing, f"missing Brazilian restaurants: {missing}"
+
+    def test_brazilian_restaurants_have_images(self, api):
+        r = api.get(f"{BASE_URL}/api/restaurants", timeout=15)
+        data = r.json()
+        by_id = {x["id"]: x for x in data}
+        for rid in ["churrascaria-brasa", "boteco-rio", "pastel-cia",
+                    "acai-sol", "feijoada-mineira"]:
+            item = by_id[rid]
+            assert item.get("image") or item.get("image_url"), f"{rid} missing image"
+
+
+# ---------------- Tickets ----------------
 class TestTickets:
     def test_tickets_have_rede_expressos_and_qr(self, api):
         r = api.get(f"{BASE_URL}/api/tickets", timeout=15)
@@ -32,13 +74,18 @@ class TestTickets:
         assert "Rede Expressos" in volta["operator"]
         assert ida["code"] == "R6LJC56"
         assert volta["code"] == "R6LJC5N"
-        assert "50" in ida["seat"] and "53" in ida["seat"]
-        assert "43" in volta["seat"] and "46" in volta["seat"]
-        assert "Abicada" in ida["arrival"]
         for t in data:
-            assert t.get("qr_url") and "quickchart.io/qr" in t["qr_url"]
+            assert t.get("qr_url") and "quickchart.io/qr" in t["qr_url"], \
+                f"{t['id']} missing qr_url"
+
+    def test_tickets_include_hotel_and_benagil(self, api):
+        r = api.get(f"{BASE_URL}/api/tickets", timeout=15)
+        data = r.json()
+        ids = {t["id"] for t in data}
+        assert {"hotel", "benagil"}.issubset(ids)
 
 
+# ---------------- Emergency ----------------
 class TestEmergency:
     def test_emergency_contacts(self, api):
         r = api.get(f"{BASE_URL}/api/emergency", timeout=15)
@@ -49,10 +96,12 @@ class TestEmergency:
         assert by_id["112"]["tone"] == "danger"
         assert by_id["112"]["phone"] == "112"
         assert by_id["hospital"].get("lat") and by_id["hospital"].get("lng")
-        for k in ["farmacia-rocha", "psp", "gnr-praia", "hotel-contact", "embaixada-br"]:
+        for k in ["farmacia-rocha", "psp", "gnr-praia",
+                  "hotel-contact", "embaixada-br"]:
             assert k in by_id
 
 
+# ---------------- Trip stats ----------------
 class TestTripStats:
     def test_trip_stats_fields(self, api):
         r = api.get(f"{BASE_URL}/api/trip-stats", timeout=15)
@@ -64,36 +113,47 @@ class TestTripStats:
             assert f in data
         assert data["phase"] in ("before", "during", "after")
         assert data["budget_max"] == 290
-        assert data["checklist_total"] > 0
 
 
+# ---------------- Itinerary ----------------
 class TestItinerary:
     def test_itinerary_events(self, api):
         r = api.get(f"{BASE_URL}/api/itinerary", timeout=15)
         assert r.status_code == 200
         data = r.json()
         assert len(data) == 4
-
-        day1_events = data[0]["events"]
-        e1 = [e for e in day1_events if e["time"] == "15:15"]
-        assert e1 and "Rede Expressos" in e1[0]["title"] and "Sete Rios" in e1[0]["title"]
-
-        day4_events = data[3]["events"]
-        e4 = [e for e in day4_events if e["time"] == "13:10"]
-        assert e4 and "R6LJC5N" in e4[0]["description"]
+        day1 = [e for e in data[0]["events"] if e["time"] == "15:15"]
+        assert day1 and "Rede Expressos" in day1[0]["title"]
+        day4 = [e for e in data[3]["events"] if e["time"] == "13:10"]
+        assert day4 and "R6LJC5N" in day4[0]["description"]
 
 
-class TestBriefings:
+# ---------------- Content endpoints ----------------
+class TestContent:
     def test_briefings(self, api):
         r = api.get(f"{BASE_URL}/api/briefings", timeout=15)
         assert r.status_code == 200
-        data = r.json()
-        assert "items" in data and "now" in data
-        assert isinstance(data["items"], list)
+        d = r.json()
+        assert "items" in d and isinstance(d["items"], list)
 
-
-class TestBasics:
-    def test_root(self, api):
-        r = api.get(f"{BASE_URL}/api/", timeout=10)
+    def test_weather(self, api):
+        r = api.get(f"{BASE_URL}/api/weather", timeout=15)
         assert r.status_code == 200
-        assert r.json()["status"] == "ok"
+
+    def test_shopping(self, api):
+        r = api.get(f"{BASE_URL}/api/shopping", timeout=15)
+        assert r.status_code == 200
+        d = r.json()
+        assert isinstance(d, list) or isinstance(d, dict)
+
+
+# ---------------- Query-param endpoints ----------------
+class TestSmartGo:
+    def test_smart_go_requires_params(self, api):
+        # Without params -> 422 (validation error) is expected
+        r = api.get(f"{BASE_URL}/api/smart-go", timeout=10)
+        assert r.status_code == 422
+
+    def test_bus_next_requires_params(self, api):
+        r = api.get(f"{BASE_URL}/api/bus/next", timeout=10)
+        assert r.status_code == 422

@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 3 PASS. Verified Vercel build fix + all Sprint-3 additions. Backend: 13/13 pytest passed (restaurants=10 incl. 5 Brazilian: churrascaria-brasa/boteco-rio/pastel-cia/acai-sol/feijoada-mineira; tickets=4 with Rede Expressos R6LJC56 + R6LJC5N + hotel STD17-1276 + Benagil BEN-SG-2603 all with quickchart.io qr_url; emergency=9 with 112 danger + hospital lat/lng; trip-stats phase/budget/checklist/shopping; itinerary Day1 15:15 Rede Expressos + Day4 13:10 R6LJC5N; briefings/weather/shopping OK; smart-go & bus/next correctly return 422 without required query params). Expo web export build: 'cd /app/frontend && rm -rf dist && EXPO_PUBLIC_BACKEND_URL=https://portimao-family-backend.onrender.com npx expo export --platform web --output-dir dist' completed successfully — produced dist/index.html (1.29 kB) + dist/_expo/static/js/web/entry-<hash>.js (2.7 MB) + favicon.ico + metadata.json + assets/. Verified backend URL 'portimao-family-backend.onrender.com' is baked into the bundle. Frontend on Emergent preview: home shows 'Portimão Verão 26' title with weather pill (18-24°C, UV 5), countdown, briefings, 3-card stats dashboard, quick actions grid including Bilhetes & Emergências. /restaurants: 'Brasileiro' filter chip works and reveals Brasa Churrascaria, Boteco do Rio, Pastel & Cia, Açaí do Sol, Sabor Mineiro with real images, ratings, distance chips, promos, menus. /tickets: 4 cards render with operator badges & 'Mostrar QR' — modal opens showing QR image, reservation ID, code R6LJC56. /emergencia: big red '112' card with 'GRATUITO • 24H • UE', Saúde section (SNS 24, Hospital, Farmácia), Segurança section (PSP, GNR, Hotel). /gallery: 3-way picker Foto/Vídeo/Câmara visible + empty state (no existing photos so Save/Share thumb buttons could not be visually verified but no functional regression detected). Same deprecation warnings as iter 2 remain (shadow* → boxShadow, props.pointerEvents → style.pointerEvents) — no new issues.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "styles (shadow props)", "issue": "Console warning persists across screens: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Reference: /app/frontend/src/theme.ts (shadows.soft/medium)"},
+      {"component": "props.pointerEvents", "issue": "Console warning persists: 'props.pointerEvents is deprecated. Use style.pointerEvents' — likely from Modal/Animated.View. Reference: /app/frontend/app/tickets.tsx modal wrappers"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/iteration_3.xml"
+  ],
+  "action_items": [
+    "(low, carried over) Migrate theme shadow* props to boxShadow strings for react-native-web.",
+    "(low, carried over) Replace remaining props.pointerEvents usages with style.pointerEvents.",
+    "(informational) Gallery empty-state was shown because no photos exist yet — visually confirm Save + Share thumb buttons render once a photo is added (main agent can self-test)."
+  ],
+  "critical_code_review_comments": [
+    "vercel.json duplicates EXPO_PUBLIC_BACKEND_URL in both buildCommand and build.env — safe but redundant; the build.env alone would suffice for Expo to pick it up.",
+    "server.py now 1183 lines — still monolithic; consider splitting endpoints into routers (restaurants, tickets, emergency, briefings, chat) as a future refactor.",
+    "expo export bundle is 2.7 MB (single entry-<hash>.js). Consider enabling metro tree-shaking / removing unused @expo/vector-icons families to trim size (Vercel/Onrender bandwidth)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Used existing seeded restaurants/tickets/emergency/checklist/shopping.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Vercel deploy target uses build command from /app/frontend/vercel.json which runs 'expo export --platform web --output-dir dist' with EXPO_PUBLIC_BACKEND_URL=https://portimao-family-backend.onrender.com. That build is confirmed reproducible locally. Emergent preview uses EXPO_PUBLIC_BACKEND_URL from /app/frontend/.env pointing to the same host as the frontend, which is why all API calls route through /api on the preview domain. Gallery is empty by default; to test Save/Share thumb buttons, add a photo via the Foto picker first.",
+  "rca_of_issue": "N/A — original Vercel 404 was caused by force-push overwriting the previous vercel.json; new vercel.json restores the Expo web export build. Local reproduction of exactly what Vercel will run succeeded and produced valid dist output."
+}
