@@ -12,7 +12,21 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+# --- LLM: try emergentintegrations first (Emergent LLM Key), fallback to google-generativeai ---
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage  # type: ignore
+    HAS_EMERGENT = True
+except ImportError:
+    HAS_EMERGENT = False
+    LlmChat = None  # type: ignore
+    UserMessage = None  # type: ignore
+
+try:
+    import google.generativeai as genai  # type: ignore
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+    genai = None  # type: ignore
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -22,6 +36,43 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+if HAS_GENAI and GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+async def llm_generate(prompt: str, system: str = "", max_tokens: int = 400, session_id: str = "default") -> Optional[str]:
+    """Try Emergent LLM Key first, then Google Gemini API. Returns None if neither works."""
+    # 1) Emergent LLM key (dev / Emergent env)
+    if HAS_EMERGENT and EMERGENT_LLM_KEY and LlmChat and UserMessage:
+        try:
+            chat_instance = (
+                LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id, system_message=system or "")
+                .with_model("gemini", "gemini-2.5-flash")
+                .with_max_tokens(max_tokens)
+            )
+            reply = await chat_instance.send_message(UserMessage(text=prompt))
+            return (reply or "").strip()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Emergent LLM failed: %s", e)
+
+    # 2) Google Gemini direct (production / Render)
+    if HAS_GENAI and GEMINI_API_KEY:
+        try:
+            model = genai.GenerativeModel(
+                model_name="gemini-2.0-flash",
+                system_instruction=system if system else None,
+            )
+            resp = await model.generate_content_async(prompt)
+            return (resp.text or "").strip()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Gemini SDK failed: %s", e)
+
+    return None
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -1563,11 +1614,21 @@ async def attractions():
 @api_router.get("/ai-tip")
 async def ai_tip():
     """Generates a contextual family tip via Gemini. Cached by day."""
-    if not EMERGENT_LLM_KEY:
-        return {"tip": "Dica do dia: chegar cedo à praia para melhor lugar!", "topic": "Praia"}
-
     now = now_lisbon()
     day_key = now.strftime("%Y-%m-%d")
+
+    # Curated fallback tips (rotated by day-of-week)
+    FALLBACK_TIPS = [
+        {"tip": "Chegar à praia antes das 11h — melhor lugar + sol menos agressivo para o Arthur (5).", "topic": "Praia", "icon": "sunny"},
+        {"tip": "Continente fecha às 22h. Comprem hoje leite, pão, fruta e água — poupança €80-120 na viagem.", "topic": "Poupança", "icon": "cart"},
+        {"tip": "Vai e Vem Linha 14 leva-vos até Alvor por €1,60-2,50. Alternativa low-cost ao Bolt.", "topic": "Transporte", "icon": "bus"},
+        {"tip": "SPF50+ reaplicar cada 90 min. Água a cada 30 min para as crianças. Chapéus sempre.", "topic": "Segurança", "icon": "shield"},
+        {"tip": "Peçam upgrade do quarto no check-in — 'há upgrade disponível?' às vezes dá grátis.", "topic": "Hotel", "icon": "gift"},
+        {"tip": "Grutas de Benagil small-group melhor às 15h — mais tempo dentro da gruta.", "topic": "Atividade", "icon": "boat"},
+        {"tip": "Marinha, Vau ou Ferragudo — praias mais calmas que Rocha, perfeitas para o Arthur.", "topic": "Praia", "icon": "sunny"},
+    ]
+    fallback = FALLBACK_TIPS[now.weekday() % len(FALLBACK_TIPS)]
+
     cached = await db.ai_tips.find_one({"date": day_key}, {"_id": 0})
     if cached:
         return cached
@@ -1594,24 +1655,27 @@ Dá UMA dica muito prática e específica (máximo 2 frases, 40 palavras). Respo
 
 Não inventes preços/horários. Sê caloroso e específico."""
 
+    raw = await llm_generate(
+        prompt,
+        system="Devolve APENAS JSON válido, sem markdown, sem ```.",
+        max_tokens=200,
+        session_id=f"tip-{day_key}",
+    )
+    if not raw:
+        result = {**fallback, "date": day_key}
+        return result
+
     try:
-        chat_instance = (
-            LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"tip-{day_key}", system_message="Devolve APENAS JSON válido, sem markdown, sem ```.")
-            .with_model("gemini", "gemini-2.5-flash")
-            .with_max_tokens(200)
-        )
-        raw = await chat_instance.send_message(UserMessage(text=prompt))
-        raw = (raw or "").strip().replace("```json", "").replace("```", "").strip()
+        raw_clean = raw.replace("```json", "").replace("```", "").strip()
         import json as _json
-        parsed = _json.loads(raw)
+        parsed = _json.loads(raw_clean)
         parsed["date"] = day_key
-        # persist
         await db.ai_tips.replace_one({"date": day_key}, parsed, upsert=True)
         parsed.pop("_id", None)
         return parsed
-    except Exception as e:
-        logger.warning("ai_tip failed: %s", e)
-        return {"tip": "Chegar à praia antes das 11h garante melhor lugar + sol menos agressivo para as crianças.", "topic": "Praia", "icon": "sunny", "date": day_key}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("ai_tip parse failed: %s", e)
+        return {**fallback, "date": day_key}
 
 
 # ---- AI Chat (Emergent LLM Key + Gemini) ----
@@ -1695,7 +1759,7 @@ CONTEXTO DA VIAGEM:
 - Família Sacramento: Alex (39), Priscila (38), Alexsandro (11), Arthur (5)
 - Portimão • Praia da Rocha • Algarve • 12-15 Julho 2026
 - Studio 17 by Atlantichotels (cozinha completa)
-- FlixBus direto Lisboa Oriente ↔ Portimão (€76,91 família)
+- Rede Expressos direto Lisboa Sete Rios ↔ Portimão Rua da Abicada (3h15)
 - Grutas de Benagil small-group ~€30/pessoa
 - Orçamento €250-290 com hacks
 
@@ -1713,8 +1777,11 @@ Domínios: praias Algarve, restaurantes Portimão, Vai e Vem/Bolt, Benagil, Alvo
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest):
-    if not EMERGENT_LLM_KEY:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+    if not (EMERGENT_LLM_KEY or GEMINI_API_KEY):
+        raise HTTPException(
+            status_code=503,
+            detail="AI indisponível — configura EMERGENT_LLM_KEY ou GEMINI_API_KEY no servidor."
+        )
 
     # Persist user message
     await db.chat_messages.insert_one({
@@ -1723,20 +1790,14 @@ async def chat(payload: ChatRequest):
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
 
-    try:
-        chat_instance = (
-            LlmChat(
-                api_key=EMERGENT_LLM_KEY,
-                session_id=payload.session_id,
-                system_message=SYSTEM_PROMPT,
-            )
-            .with_model("gemini", "gemini-2.5-flash")
-        )
-        reply_text = await chat_instance.send_message(UserMessage(text=payload.message))
-        reply_text = (reply_text or "").strip()
-    except Exception as e:  # noqa: BLE001
-        logger.exception("Chat error")
-        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+    reply_text = await llm_generate(
+        payload.message,
+        system=SYSTEM_PROMPT,
+        max_tokens=600,
+        session_id=payload.session_id,
+    )
+    if not reply_text:
+        raise HTTPException(status_code=500, detail="AI backend não respondeu. Tenta novamente.")
 
     await db.chat_messages.insert_one({
         "role": "assistant", "content": reply_text,
