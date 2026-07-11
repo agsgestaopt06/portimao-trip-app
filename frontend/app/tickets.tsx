@@ -1,15 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
 import {
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
 
 import { api, Ticket } from "@/src/api";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
@@ -18,6 +21,7 @@ import { colors, radius, shadows, spacing, typography } from "@/src/theme";
 export default function Tickets() {
   const [items, setItems] = useState<Ticket[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [qrTicket, setQrTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
     api.tickets().then((d: Ticket[]) => setItems(d)).catch(() => {});
@@ -41,17 +45,39 @@ export default function Tickets() {
     <View style={styles.screen}>
       <ScreenHeader
         title="Bilhetes digitais"
-        subtitle="Tudo num só sítio • pronto para partilhar"
+        subtitle="Rede Expressos + hotel + tour — tudo num só sítio"
         testID="tickets-header"
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {items.map((t, i) => (
           <Animated.View key={t.id} entering={FadeInDown.delay(80 * i).duration(420)}>
-            <View style={styles.card} testID={`ticket-${t.id}`}>
+            <Pressable
+              style={styles.card}
+              testID={`ticket-${t.id}`}
+              onPress={() => t.qr_url && setQrTicket(t)}
+            >
               <View style={[styles.stripe, { backgroundColor: t.color }]}>
                 <Ionicons name={t.icon as any} size={22} color="#fff" />
-                <Text style={styles.stripeLabel}>{typeLabel(t.type)}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stripeLabel}>{typeLabel(t.type)}</Text>
+                  {t.operator && <Text style={styles.stripeOperator}>{t.operator}</Text>}
+                </View>
+                {t.qr_url && (
+                  <View style={styles.qrHint}>
+                    <Ionicons name="qr-code" size={18} color="#fff" />
+                  </View>
+                )}
               </View>
+
+              {/* Perforation strip */}
+              <View style={styles.perforation}>
+                <View style={styles.notchLeft} />
+                {Array.from({ length: 20 }).map((_, k) => (
+                  <View key={k} style={styles.dashPiece} />
+                ))}
+                <View style={styles.notchRight} />
+              </View>
+
               <View style={styles.body}>
                 <Text style={styles.title}>{t.title}</Text>
                 <View style={styles.row}>
@@ -64,6 +90,14 @@ export default function Tickets() {
                     <Text style={styles.value}>{t.arrival}</Text>
                   </View>
                 </View>
+
+                {t.duration && (
+                  <View style={styles.durChip}>
+                    <Ionicons name="time" size={12} color={colors.brandDark} />
+                    <Text style={styles.durText}>{t.duration}</Text>
+                  </View>
+                )}
+
                 <View style={styles.divider} />
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
@@ -85,23 +119,73 @@ export default function Tickets() {
                   <Text style={styles.priceText}>{t.price}</Text>
                 </View>
                 <View style={styles.actions}>
+                  {t.qr_url && (
+                    <Pressable
+                      style={styles.actionPrimary}
+                      onPress={() => setQrTicket(t)}
+                      testID={`ticket-qr-${t.id}`}
+                    >
+                      <Ionicons name="qr-code" size={16} color="#fff" />
+                      <Text style={styles.actionPrimaryText}>Mostrar QR</Text>
+                    </Pressable>
+                  )}
                   <Pressable style={styles.actionBtn} onPress={() => shareWhatsApp(t)} testID={`ticket-share-${t.id}`}>
                     <Ionicons name="share-social" size={16} color={colors.brandPrimary} />
                     <Text style={styles.actionText}>Partilhar</Text>
                   </Pressable>
                 </View>
               </View>
-            </View>
+            </Pressable>
           </Animated.View>
         ))}
 
         <View style={styles.footNote}>
-          <Ionicons name="information-circle" size={16} color={colors.onSurfaceMuted} />
+          <Ionicons name="cloud-offline" size={16} color={colors.onSurfaceMuted} />
           <Text style={styles.footText}>
-            Guarda os códigos no telemóvel — funcionam mesmo sem internet. Confirmação por email disponível em caso de perda.
+            Bilhetes digitais Rede Expressos podem ser usados <Text style={{ fontWeight: "700" }}>offline</Text>. Basta mostrar no telemóvel.
           </Text>
         </View>
       </ScrollView>
+
+      {/* QR modal */}
+      <Modal
+        visible={!!qrTicket}
+        transparent
+        animationType={Platform.OS === "web" ? "fade" : "slide"}
+        onRequestClose={() => setQrTicket(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setQrTicket(null)}>
+          <Animated.View entering={SlideInDown.duration(300)} style={styles.qrSheet}>
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.grabber} />
+              {qrTicket && (
+                <>
+                  <View style={styles.qrHeader}>
+                    <View style={[styles.qrIconWrap, { backgroundColor: qrTicket.color }]}>
+                      <Ionicons name={qrTicket.icon as any} size={22} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.qrTitle}>{qrTicket.title}</Text>
+                      <Text style={styles.qrSub}>{qrTicket.when}</Text>
+                    </View>
+                    <Pressable onPress={() => setQrTicket(null)} hitSlop={12}>
+                      <Ionicons name="close" size={24} color={colors.onSurfaceMuted} />
+                    </Pressable>
+                  </View>
+                  <Animated.View entering={FadeIn.delay(100)} style={styles.qrImageWrap}>
+                    <Image source={{ uri: qrTicket.qr_url }} style={styles.qrImage} contentFit="contain" />
+                  </Animated.View>
+                  <Text style={styles.qrCode}>{qrTicket.code}</Text>
+                  <Text style={styles.qrHintText}>Mostra este QR ao motorista ou na receção</Text>
+                  {qrTicket.reservation && (
+                    <Text style={styles.qrRes}>Reserva: {qrTicket.reservation}</Text>
+                  )}
+                </>
+              )}
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -124,14 +208,45 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   stripeLabel: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  stripeOperator: { color: "rgba(255,255,255,0.85)", fontSize: 11, marginTop: 2 },
+  qrHint: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+  },
+  perforation: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: colors.surfaceSecondary,
+    height: 12,
+    position: "relative",
+  },
+  notchLeft: {
+    position: "absolute", left: -8, top: -6,
+    width: 16, height: 16, borderRadius: 8,
+    backgroundColor: colors.surface,
+  },
+  notchRight: {
+    position: "absolute", right: -8, top: -6,
+    width: 16, height: 16, borderRadius: 8,
+    backgroundColor: colors.surface,
+  },
+  dashPiece: { flex: 1, height: 1, marginHorizontal: 3, backgroundColor: colors.border },
   body: { padding: spacing.lg, gap: spacing.md },
   title: { ...typography.h2, color: colors.onSurface },
   row: { flexDirection: "row", gap: spacing.md },
   kicker: { fontSize: 10, letterSpacing: 1, fontWeight: "700", color: colors.brandSecondary },
   value: { fontSize: 13, fontWeight: "600", color: colors.onSurface, marginTop: 3, lineHeight: 18 },
+  durChip: {
+    alignSelf: "flex-start",
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: colors.surfaceTertiary,
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  durText: { fontSize: 11, fontWeight: "700", color: colors.brandDark },
   code: {
-    fontSize: 20, fontWeight: "800",
-    color: colors.brandDark, letterSpacing: 1.5,
+    fontSize: 22, fontWeight: "800",
+    color: colors.brandDark, letterSpacing: 2,
     marginTop: 4,
     fontFamily: "monospace",
   },
@@ -140,6 +255,13 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   priceText: { fontSize: 13, fontWeight: "700", color: colors.brandDark },
   actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  actionPrimary: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: colors.brandPrimary,
+    paddingHorizontal: spacing.md, paddingVertical: 10,
+    borderRadius: radius.pill,
+  },
+  actionPrimaryText: { fontSize: 12, fontWeight: "700", color: "#fff" },
   actionBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     backgroundColor: colors.brandTertiary,
@@ -155,4 +277,42 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   footText: { flex: 1, fontSize: 12, color: colors.onSurfaceTertiary, lineHeight: 17 },
+
+  // QR sheet
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  qrSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.xl,
+    paddingBottom: spacing["2xl"],
+  },
+  grabber: {
+    alignSelf: "center", width: 44, height: 5, borderRadius: 3,
+    backgroundColor: colors.borderStrong, marginBottom: spacing.lg,
+  },
+  qrHeader: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.xl },
+  qrIconWrap: {
+    width: 46, height: 46, borderRadius: 14,
+    alignItems: "center", justifyContent: "center",
+  },
+  qrTitle: { ...typography.h3, color: colors.onSurface },
+  qrSub: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
+  qrImageWrap: {
+    alignSelf: "center",
+    padding: spacing.md,
+    backgroundColor: "#fff",
+    borderRadius: radius.lg,
+    ...shadows.medium,
+  },
+  qrImage: { width: 240, height: 240 },
+  qrCode: {
+    textAlign: "center",
+    marginTop: spacing.lg,
+    fontSize: 22, fontWeight: "800",
+    letterSpacing: 3, color: colors.brandDark,
+    fontFamily: "monospace",
+  },
+  qrHintText: { textAlign: "center", fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6 },
+  qrRes: { textAlign: "center", fontSize: 10, color: colors.onSurfaceMuted, marginTop: spacing.sm },
 });

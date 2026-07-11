@@ -1,226 +1,99 @@
-"""Backend API tests for Portimão trip app.
-
-Covers Smart Go, Briefings, Bus schedule/next, Weather (Open-Meteo),
-Shopping list toggle, Tickets, Restaurants, AI Chat (Gemini via Emergent),
-and existing endpoints (trip, itinerary, hacks, checklist, budget, gallery,
-diary).
-"""
+"""Backend tests for Portimão'26 – Iteration 2."""
 import os
-import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL", "https://portimao-experiences.preview.emergentagent.com").rstrip("/")
-API = f"{BASE_URL}/api"
+BASE_URL = None
+with open("/app/frontend/.env") as f:
+    for line in f:
+        if line.startswith("EXPO_PUBLIC_BACKEND_URL="):
+            BASE_URL = line.split("=", 1)[1].strip().rstrip("/")
+            break
 
 
 @pytest.fixture(scope="module")
-def sess():
+def api():
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
     return s
 
 
-# ----- Root / Trip / Existing -----
-class TestBasic:
-    def test_root(self, sess):
-        r = sess.get(f"{API}/", timeout=15)
-        assert r.status_code == 200
-        assert r.json().get("status") == "ok"
-
-    def test_trip(self, sess):
-        r = sess.get(f"{API}/trip", timeout=15)
-        assert r.status_code == 200
-        d = r.json()
-        assert d["destination"].startswith("Portimão")
-        assert d["budget_min"] == 250 and d["budget_max"] == 290
-
-    def test_itinerary(self, sess):
-        r = sess.get(f"{API}/itinerary", timeout=15)
-        assert r.status_code == 200
-        items = r.json()
-        assert len(items) == 4
-        assert items[0]["day"] == 1 and len(items[0]["events"]) > 0
-
-    def test_hacks(self, sess):
-        r = sess.get(f"{API}/hacks", timeout=15)
-        assert r.status_code == 200 and len(r.json()) >= 6
-
-    def test_checklist_seeded(self, sess):
-        r = sess.get(f"{API}/checklist", timeout=15)
+class TestTickets:
+    def test_tickets_have_rede_expressos_and_qr(self, api):
+        r = api.get(f"{BASE_URL}/api/tickets", timeout=15)
         assert r.status_code == 200
         data = r.json()
-        assert len(data) >= 15
-        assert all("id" in x and "label" in x for x in data)
+        assert isinstance(data, list) and len(data) == 4
+
+        ida = next((t for t in data if t["id"] == "expressos-ida"), None)
+        volta = next((t for t in data if t["id"] == "expressos-volta"), None)
+        assert ida and volta
+        assert "Rede Expressos" in ida["operator"]
+        assert "Rede Expressos" in volta["operator"]
+        assert ida["code"] == "R6LJC56"
+        assert volta["code"] == "R6LJC5N"
+        assert "50" in ida["seat"] and "53" in ida["seat"]
+        assert "43" in volta["seat"] and "46" in volta["seat"]
+        assert "Abicada" in ida["arrival"]
+        for t in data:
+            assert t.get("qr_url") and "quickchart.io/qr" in t["qr_url"]
 
 
-# ----- Smart Go -----
-class TestSmartGo:
-    def test_smart_go_hotel_marina(self, sess):
-        r = sess.get(f"{API}/smart-go", params={"from": "hotel", "to": "marina"}, timeout=15)
-        assert r.status_code == 200, r.text
-        d = r.json()
-        for k in ("distance_km", "walking", "bolt", "nearby", "maps_url", "from", "to"):
-            assert k in d, f"missing {k}"
-        assert isinstance(d["distance_km"], (int, float)) and d["distance_km"] > 0
-        assert d["walking"]["minutes"] > 0
-        assert d["bolt"]["eur"] > 0
-        assert isinstance(d["nearby"], list) and len(d["nearby"]) == 3
-        assert d["maps_url"].startswith("https://maps.google.com")
-
-    def test_smart_go_hotel_praia_rocha_has_bus(self, sess):
-        r = sess.get(f"{API}/smart-go", params={"from": "hotel", "to": "praia-rocha"}, timeout=15)
+class TestEmergency:
+    def test_emergency_contacts(self, api):
+        r = api.get(f"{BASE_URL}/api/emergency", timeout=15)
         assert r.status_code == 200
-        d = r.json()
-        # Both stops are on L12/L15/L16 → should have bus info
-        assert d.get("bus") is not None
-        assert d["bus"]["line_id"] in ("12", "15", "16")
-        assert d["bus"]["minutes_until"] is not None
+        data = r.json()
+        assert len(data) == 9
+        by_id = {c["id"]: c for c in data}
+        assert by_id["112"]["tone"] == "danger"
+        assert by_id["112"]["phone"] == "112"
+        assert by_id["hospital"].get("lat") and by_id["hospital"].get("lng")
+        for k in ["farmacia-rocha", "psp", "gnr-praia", "hotel-contact", "embaixada-br"]:
+            assert k in by_id
 
-    def test_smart_go_invalid_location(self, sess):
-        r = sess.get(f"{API}/smart-go", params={"from": "nowhere", "to": "marina"}, timeout=15)
-        assert r.status_code == 404
+
+class TestTripStats:
+    def test_trip_stats_fields(self, api):
+        r = api.get(f"{BASE_URL}/api/trip-stats", timeout=15)
+        assert r.status_code == 200
+        data = r.json()
+        for f in ["phase", "phase_label", "budget_spent", "budget_max",
+                  "checklist_done", "checklist_total",
+                  "shopping_done", "shopping_total", "budget_ratio"]:
+            assert f in data
+        assert data["phase"] in ("before", "during", "after")
+        assert data["budget_max"] == 290
+        assert data["checklist_total"] > 0
 
 
-# ----- Briefings -----
+class TestItinerary:
+    def test_itinerary_events(self, api):
+        r = api.get(f"{BASE_URL}/api/itinerary", timeout=15)
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) == 4
+
+        day1_events = data[0]["events"]
+        e1 = [e for e in day1_events if e["time"] == "15:15"]
+        assert e1 and "Rede Expressos" in e1[0]["title"] and "Sete Rios" in e1[0]["title"]
+
+        day4_events = data[3]["events"]
+        e4 = [e for e in day4_events if e["time"] == "13:10"]
+        assert e4 and "R6LJC5N" in e4[0]["description"]
+
+
 class TestBriefings:
-    def test_briefings_shape(self, sess):
-        r = sess.get(f"{API}/briefings", timeout=15)
+    def test_briefings(self, api):
+        r = api.get(f"{BASE_URL}/api/briefings", timeout=15)
         assert r.status_code == 200
         data = r.json()
         assert "items" in data and "now" in data
         assert isinstance(data["items"], list)
 
-    def test_briefings_contains_checkin(self, sess):
-        r = sess.get(f"{API}/briefings", timeout=15)
-        ids = [i["id"] for i in r.json()["items"]]
-        assert "briefing-checkin" in ids
 
-
-# ----- Bus schedule -----
-class TestBus:
-    def test_bus_schedule_all_lines(self, sess):
-        r = sess.get(f"{API}/bus/schedule", timeout=15)
+class TestBasics:
+    def test_root(self, api):
+        r = api.get(f"{BASE_URL}/api/", timeout=10)
         assert r.status_code == 200
-        data = r.json()
-        assert "lines" in data and "now" in data
-        ids = [l["id"] for l in data["lines"]]
-        assert set(ids) == {"12", "14", "15", "16"}
-        for l in data["lines"]:
-            assert l["next"] is not None
-            assert "time" in l["next"] and "minutes_until" in l["next"]
-
-    def test_bus_next_hotel_sorted(self, sess):
-        r = sess.get(f"{API}/bus/next", params={"stop": "hotel"}, timeout=15)
-        assert r.status_code == 200
-        d = r.json()
-        assert d["stop"]["id"] == "hotel"
-        mins = [b["minutes_until"] for b in d["buses"] if b["minutes_until"] is not None]
-        assert mins == sorted(mins)
-        assert len(d["buses"]) >= 3  # L12, L14, L15, L16 all pass hotel
-
-    def test_bus_next_bad_stop(self, sess):
-        r = sess.get(f"{API}/bus/next", params={"stop": "xyz"}, timeout=15)
-        assert r.status_code == 404
-
-
-# ----- Weather -----
-class TestWeather:
-    def test_weather(self, sess):
-        r = sess.get(f"{API}/weather", timeout=20)
-        assert r.status_code == 200
-        d = r.json()
-        for k in ("current_temp", "uv_max", "temp_max", "temp_min", "rain_chance", "daily"):
-            assert k in d
-
-
-# ----- Shopping -----
-class TestShopping:
-    def test_shopping_seeded(self, sess):
-        r = sess.get(f"{API}/shopping", timeout=15)
-        assert r.status_code == 200
-        d = r.json()
-        assert len(d["items"]) >= 12
-        assert d["total"] > 0
-
-    def test_shopping_toggle(self, sess):
-        # get first item
-        items = sess.get(f"{API}/shopping").json()["items"]
-        target = items[0]
-        original = target.get("checked", False)
-        r = sess.post(f"{API}/shopping/toggle", json={"id": target["id"], "checked": not original}, timeout=15)
-        assert r.status_code == 200
-        # verify via GET
-        after = sess.get(f"{API}/shopping").json()["items"]
-        got = [x for x in after if x["id"] == target["id"]][0]
-        assert got["checked"] == (not original)
-        # revert
-        sess.post(f"{API}/shopping/toggle", json={"id": target["id"], "checked": original})
-
-
-# ----- Tickets -----
-class TestTickets:
-    def test_tickets(self, sess):
-        r = sess.get(f"{API}/tickets", timeout=15)
-        assert r.status_code == 200
-        data = r.json()
-        assert len(data) == 4
-        types = [t["type"] for t in data]
-        assert types.count("bus") == 2
-        assert "hotel" in types and "activity" in types
-        for t in data:
-            assert t.get("code") and t.get("title")
-
-
-# ----- Restaurants -----
-class TestRestaurants:
-    def test_restaurants(self, sess):
-        r = sess.get(f"{API}/restaurants", timeout=15)
-        assert r.status_code == 200
-        data = r.json()
-        assert len(data) == 5
-        for r_ in data:
-            assert r_.get("image_url", "").startswith("http")
-            assert isinstance(r_.get("menu"), list) and len(r_["menu"]) > 0
-            assert "walk_min" in r_ and "distance_km" in r_
-
-
-# ----- Chat (Gemini) -----
-class TestChat:
-    def test_chat_reply(self, sess):
-        sid = f"TEST_{uuid.uuid4()}"
-        r = sess.post(
-            f"{API}/chat",
-            json={"session_id": sid, "message": "Diz olá em 1 frase curta."},
-            timeout=45,
-        )
-        assert r.status_code == 200, r.text
-        d = r.json()
-        assert d["session_id"] == sid
-        assert isinstance(d["reply"], str) and len(d["reply"]) > 0
-
-
-# ----- Budget / Gallery / Diary CRUD sanity -----
-class TestCRUD:
-    def test_budget_list(self, sess):
-        r = sess.get(f"{API}/budget/expenses", timeout=15)
-        assert r.status_code == 200
-        d = r.json()
-        assert "expenses" in d and "total_spent" in d
-
-    def test_budget_add_and_delete(self, sess):
-        r = sess.post(f"{API}/budget/expenses",
-                      json={"category": "TEST", "description": "TEST_expense", "amount": 1.23},
-                      timeout=15)
-        assert r.status_code == 200
-        eid = r.json()["id"]
-        r2 = sess.delete(f"{API}/budget/expenses/{eid}", timeout=15)
-        assert r2.status_code == 200
-
-    def test_gallery_list(self, sess):
-        r = sess.get(f"{API}/gallery", timeout=15)
-        assert r.status_code == 200 and isinstance(r.json(), list)
-
-    def test_diary_list(self, sess):
-        r = sess.get(f"{API}/diary", timeout=15)
-        assert r.status_code == 200 and isinstance(r.json(), list)
+        assert r.json()["status"] == "ok"

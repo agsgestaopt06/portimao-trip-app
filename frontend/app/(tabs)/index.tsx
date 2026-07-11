@@ -22,7 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { api, Briefing, BusNext, Weather } from "@/src/api";
+import { api, Briefing, BusNext, TripStats, Weather } from "@/src/api";
 import { SmartGoSheet } from "@/src/components/SmartGoSheet";
 import { useCountdown } from "@/src/countdown";
 import { colors, images, radius, shadows, spacing, typography } from "@/src/theme";
@@ -48,11 +48,11 @@ const QUICK_ACTIONS: {
   route: string;
   tint: string;
 }[] = [
+  { id: "tickets", label: "Bilhetes", sub: "Rede Expressos + QR", icon: "ticket", route: "/tickets", tint: colors.brandTerracottaSoft },
   { id: "shopping", label: "Compras", sub: "Lista Continente", icon: "cart", route: "/shopping", tint: colors.brandTertiary },
-  { id: "tickets", label: "Bilhetes", sub: "FlixBus + hotel", icon: "ticket", route: "/tickets", tint: colors.brandTerracottaSoft },
   { id: "map", label: "Mapa", sub: "Locais + Smart Go", icon: "map", route: "/map", tint: colors.sunSoft },
   { id: "budget", label: "Orçamento", sub: "€250-290 hack", icon: "wallet", route: "/budget", tint: colors.brandTerracottaSoft },
-  { id: "checklist", label: "Checklist", sub: "20 itens", icon: "checkbox", route: "/checklist", tint: colors.sunSoft },
+  { id: "emergencia", label: "Emergências", sub: "112 + hospital", icon: "medkit", route: "/emergencia", bg: "#FEE2E2" as any, tint: "#FEE2E2" },
   { id: "hacks", label: "Hacks", sub: "8 segredos", icon: "flash", route: "/hacks", tint: colors.brandTertiary },
 ];
 
@@ -64,6 +64,7 @@ export default function Home() {
   const [briefings, setBriefings] = useState<Briefing[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
   const [nextBus, setNextBus] = useState<BusNext[]>([]);
+  const [stats, setStats] = useState<TripStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [heroIdx, setHeroIdx] = useState(0);
   const [smartGo, setSmartGo] = useState<{ from: string; to: string } | null>(null);
@@ -85,16 +86,18 @@ export default function Home() {
 
   const load = useCallback(async () => {
     try {
-      const [t, b, w, bn] = await Promise.all([
+      const [t, b, w, bn, s] = await Promise.all([
         api.trip(),
         api.briefings().catch(() => ({ items: [], now: "" })),
         api.weather().catch(() => null),
         api.busNext("hotel").catch(() => ({ stop: null, buses: [], now: "" })),
+        api.tripStats().catch(() => null),
       ]);
       setTrip(t);
       setBriefings((b as any).items || []);
       setWeather(w as Weather | null);
       setNextBus((bn as any).buses || []);
+      setStats(s as TripStats | null);
     } catch (e) {
       console.log("home load", e);
     }
@@ -188,6 +191,44 @@ export default function Home() {
           </View>
         </View>
 
+        {/* Trip stats mini dashboard */}
+        {stats && (
+          <View style={styles.section}>
+            <View style={styles.stats} testID="home-stats">
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: colors.brandTertiary }]}>
+                  <Ionicons name="calendar" size={18} color={colors.brandDark} />
+                </View>
+                <Text style={styles.statValue}>
+                  {stats.phase_value}
+                  {stats.phase_unit ? <Text style={styles.statUnit}> {stats.phase_unit}</Text> : null}
+                </Text>
+                <Text style={styles.statLabel}>{stats.phase_label}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: colors.brandTerracottaSoft }]}>
+                  <Ionicons name="wallet" size={18} color={colors.brandSecondary} />
+                </View>
+                <Text style={styles.statValue}>€{stats.budget_spent.toFixed(0)}</Text>
+                <Text style={styles.statLabel}>de €{stats.budget_max}</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${Math.min(100, stats.budget_ratio * 100)}%`, backgroundColor: stats.budget_ratio > 0.9 ? colors.error : colors.brandSecondary }]} />
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: colors.sunSoft }]}>
+                  <Ionicons name="checkmark-done" size={18} color={colors.sun} />
+                </View>
+                <Text style={styles.statValue}>{stats.checklist_done}<Text style={styles.statUnit}>/{stats.checklist_total}</Text></Text>
+                <Text style={styles.statLabel}>Checklist</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${stats.checklist_ratio * 100}%`, backgroundColor: colors.brandPrimary }]} />
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Briefings (contextual reminders) */}
         {briefings.length > 0 && (
           <View style={styles.section}>
@@ -246,9 +287,9 @@ export default function Home() {
               <Ionicons name="bus" size={22} color={colors.onBrandPrimary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.nextKicker}>DOMINGO 12 JUL • 16:05</Text>
-              <Text style={styles.nextTitle}>FlixBus • Lisboa → Portimão</Text>
-              <Text style={styles.nextSub}>3h10 direto • Chegada 19:15 • €76,91 família</Text>
+              <Text style={styles.nextKicker}>DOMINGO 12 JUL • 15:15</Text>
+              <Text style={styles.nextTitle}>Rede Expressos • Sete Rios → Portimão</Text>
+              <Text style={styles.nextSub}>3h15 direto • Lugares 50-53 • Chegada 18:30</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.onSurfaceMuted} />
           </Pressable>
@@ -545,4 +586,29 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   hotelSmartGoText: { fontSize: 12, fontWeight: "700", color: colors.brandDark },
+
+  // Trip stats
+  stats: { flexDirection: "row", gap: spacing.sm },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  statIcon: {
+    width: 32, height: 32, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: spacing.sm,
+  },
+  statValue: { fontSize: 20, fontWeight: "800", color: colors.onSurface, letterSpacing: -0.3 },
+  statUnit: { fontSize: 12, fontWeight: "600", color: colors.onSurfaceMuted },
+  statLabel: { fontSize: 10, color: colors.onSurfaceMuted, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "700" },
+  progressBar: {
+    marginTop: 6,
+    height: 4, borderRadius: 2,
+    backgroundColor: colors.border,
+    overflow: "hidden",
+  },
+  progressFill: { height: "100%", borderRadius: 2 },
 });

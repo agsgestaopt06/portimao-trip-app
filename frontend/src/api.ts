@@ -63,6 +63,8 @@ export const api = {
   toggleShopping: (id: string, checked: boolean) =>
     req("/shopping/toggle", { method: "POST", body: JSON.stringify({ id, checked }) }),
   tickets: () => req<Ticket[]>("/tickets"),
+  emergency: () => req<EmergencyContact[]>("/emergency"),
+  tripStats: () => req<TripStats>("/trip-stats"),
 };
 
 // Shared types
@@ -122,5 +124,31 @@ export type ShoppingItem = {
 
 export type Ticket = {
   id: string; type: string; icon: string;
-  title: string; code: string; when: string; arrival: string; seat: string; price: string; color: string;
+  operator?: string;
+  title: string; code: string; reservation?: string;
+  when: string; arrival: string; duration?: string;
+  seat: string; price: string; color: string;
+  qr_url?: string;
+};
+
+export type EmergencyContact = {
+  id: string; label: string; sub: string; phone: string;
+  icon: string; tone: "danger" | "info" | "brand";
+  always_free: boolean;
+  lat?: number; lng?: number;
+};
+
+export type TripStats = {
+  phase: "before" | "during" | "after";
+  phase_label: string;
+  phase_value: number;
+  phase_unit: string;
+  budget_spent: number;
+  budget_max: number;
+  budget_ratio: number;
+  checklist_done: number;
+  checklist_total: number;
+  checklist_ratio: number;
+  shopping_done: number;
+  shopping_total: number;
 };

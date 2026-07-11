@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, radius, shadows, spacing, typography } from "@/src/theme";
@@ -14,14 +15,17 @@ const HUB: {
   bg: string;
   fg: string;
 }[] = [
-  { id: "restaurants", title: "Restaurantes", sub: "5 opções • preços reais 2026", icon: "restaurant", route: "/restaurants", bg: colors.brandTertiary, fg: colors.brandDark },
+  { id: "tickets", title: "Bilhetes digitais", sub: "Rede Expressos + hotel + QR", icon: "ticket", route: "/tickets", bg: "#0284C7", fg: "#fff" },
+  { id: "shopping", title: "Lista Continente", sub: "13 itens • ~€35 família", icon: "cart", route: "/shopping", bg: colors.brandTertiary, fg: colors.brandDark },
+  { id: "restaurants", title: "Restaurantes", sub: "5 opções • preços reais 2026", icon: "restaurant", route: "/restaurants", bg: colors.brandTerracottaSoft, fg: colors.onBrandTerracottaSoft },
   { id: "hacks", title: "Hacks & Segredos", sub: "8 dicas de agência local", icon: "flash", route: "/hacks", bg: "#1C1C1E", fg: "#fff" },
-  { id: "kids", title: "Atividades Crianças", sub: "6 ideias praia • Arthur & Alex", icon: "happy", route: "/kids-activities", bg: colors.sunSoft, fg: "#7C4A00" },
-  { id: "budget", title: "Orçamento", sub: "Registar gastos • €250-290", icon: "wallet", route: "/budget", bg: colors.brandTerracottaSoft, fg: colors.onBrandTerracottaSoft },
+  { id: "kids", title: "Atividades crianças", sub: "6 ideias praia • Arthur & Alex", icon: "happy", route: "/kids-activities", bg: colors.sunSoft, fg: "#7C4A00" },
+  { id: "budget", title: "Orçamento", sub: "Registar gastos • €250-290", icon: "wallet", route: "/budget", bg: colors.brandDark, fg: "#fff" },
   { id: "checklist", title: "Checklist", sub: "20 itens a levar", icon: "checkbox", route: "/checklist", bg: colors.surfaceSecondary, fg: colors.onSurface },
-  { id: "map", title: "Mapa da viagem", sub: "8 locais essenciais", icon: "map", route: "/map", bg: colors.surfaceSecondary, fg: colors.onSurface },
+  { id: "map", title: "Mapa da viagem", sub: "8 locais + Smart Go", icon: "map", route: "/map", bg: colors.surfaceSecondary, fg: colors.onSurface },
   { id: "gallery", title: "Galeria", sub: "Guardar fotos memoráveis", icon: "images", route: "/gallery", bg: colors.surfaceSecondary, fg: colors.onSurface },
   { id: "diary", title: "Diário de viagem", sub: "Escrever memórias", icon: "book", route: "/diary", bg: colors.surfaceSecondary, fg: colors.onSurface },
+  { id: "emergencia", title: "Emergências", sub: "112 • hospital • farmácia", icon: "medkit", route: "/emergencia", bg: "#FEE2E2", fg: "#B91C1C" },
 ];
 
 export default function Explorar() {
@@ -31,27 +35,28 @@ export default function Explorar() {
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]} testID="explorar-header">
         <Text style={styles.kicker}>EXPLORAR</Text>
         <Text style={styles.title}>Tudo para a viagem</Text>
-        <Text style={styles.sub}>Restaurantes, hacks locais, orçamento e memórias.</Text>
+        <Text style={styles.sub}>Bilhetes, restaurantes, hacks locais, emergências e memórias.</Text>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 140, gap: spacing.md }} showsVerticalScrollIndicator={false}>
-        {HUB.map((h) => (
-          <Pressable
-            key={h.id}
-            style={[styles.card, { backgroundColor: h.bg }]}
-            onPress={() => router.push(h.route as any)}
-            testID={`hub-${h.id}`}
-          >
-            <View style={styles.cardLeft}>
-              <View style={styles.cardIcon}>
-                <Ionicons name={h.icon} size={22} color={h.fg} />
+        {HUB.map((h, i) => (
+          <Animated.View key={h.id} entering={FadeInDown.delay(40 * i)}>
+            <Pressable
+              style={[styles.card, { backgroundColor: h.bg }]}
+              onPress={() => router.push(h.route as any)}
+              testID={`hub-${h.id}`}
+            >
+              <View style={styles.cardLeft}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name={h.icon} size={22} color={h.fg} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: h.fg }]}>{h.title}</Text>
+                  <Text style={[styles.cardSub, { color: h.fg, opacity: 0.75 }]}>{h.sub}</Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: h.fg }]}>{h.title}</Text>
-                <Text style={[styles.cardSub, { color: h.fg, opacity: 0.75 }]}>{h.sub}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={h.fg} style={{ opacity: 0.6 }} />
-          </Pressable>
+              <Ionicons name="chevron-forward" size={22} color={h.fg} style={{ opacity: 0.6 }} />
+            </Pressable>
+          </Animated.View>
         ))}
       </ScrollView>
     </View>

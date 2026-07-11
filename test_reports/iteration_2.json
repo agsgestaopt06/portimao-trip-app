@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 2 testing PASSED for Portimão'26 app. Backend: 6/6 pytest cases passed (tickets w/ Rede Expressos R6LJC56/R6LJC5N + qr_url, emergency 9 items w/ 112 danger + hospital lat/lng, trip-stats w/ phase+budget+checklist+shopping, itinerary Day1 15:15 Rede Expressos and Day4 13:10 R6LJC5N, briefings, root health). Frontend: onboarding shows on first visit with 3 slides+dots+Saltar+Continuar, sets onboarding_done_v1=true and does not re-show. Home displays 3-card stats dashboard, 'Rede Expressos • Sete Rios → Portimão 15:15 • Lugares 50-53' next-card, Bilhetes + Emergências in quick actions. Tickets screen shows 4 cards with operator badge, perforation, Mostrar QR, QR modal with quickchart.io image + reservation + code. Emergency screen shows big red 112 card w/ 'GRATUITO • 24H • UE', Saúde section (SNS 24/Hospital w/ map btn/Farmácia), Segurança section. Explorar hub includes hub-tickets and hub-emergencia. Deprecation warnings detected: 'shadow*' style props (React Native web) and props.pointerEvents.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "styles (shadow props)", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' — appears across screens. Reference: /app/frontend/src/theme.ts (shadows.soft/medium)"},
+      {"component": "props.pointerEvents", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents' — likely coming from Animated.View/Modal children. Reference: check /app/frontend/app/tickets.tsx Modal + Animated.View wrappers"},
+      {"component": "Reanimated layout+transform", "issue": "'[Reanimated] Property [transform] may be overwritten by a layout animation. Please wrap your component with an animated view and apply the layout animation on the wrapper.' — occurs in onboarding OnbSlide (FadeInUp + floatStyle transform on same view). Reference: /app/frontend/app/onboarding.tsx:166 (iconBig)"}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/iteration_2.xml"],
+  "action_items": [
+    "(low) Migrate theme shadow objects (shadowColor/shadowOpacity/shadowRadius/shadowOffset) to boxShadow strings for React Native Web to silence deprecation warnings.",
+    "(low) Wrap floating transform animation in Onboarding with an extra Animated.View to avoid overwriting the FadeInUp layout transform.",
+    "(low) Replace any lingering props.pointerEvents with style={{ pointerEvents: '...' }}."
+  ],
+  "critical_code_review_comments": [
+    "server.py starting to grow (>1000 lines). Consider splitting endpoints into routers (tickets, briefings, bus, weather, chat) in a future iteration.",
+    "Emergency 'hospital-contact' phone '351282400000' has 12 digits — consider formatting as '+351282400000' for tel: consistency."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None (used existing seeded checklist/shopping).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend URL: EXPO_PUBLIC_BACKEND_URL in /app/frontend/.env. All Sprint-2 endpoints (/api/tickets, /api/emergency, /api/trip-stats, updated /api/itinerary) verified. Onboarding gate uses storage util key 'onboarding_done_v1' in localStorage on web. To retrigger onboarding, clear localStorage and reload.",
+  "rca_of_issue": "N/A – no functional issues found."
+}

@@ -112,10 +112,10 @@ TRIP_INFO = {
 ITINERARY = [
     {"day": 1, "date": "12 Julho", "weekday": "Domingo", "title": "Chegada tranquila", "subtitle": "Lisboa → Portimão • Descompressão",
      "events": [
-         {"time": "16:05", "title": "FlixBus • Lisboa Oriente", "description": "Embarque com bilhetes digitais. Lugares janela reservados.", "icon": "bus", "highlight": False},
-         {"time": "19:15", "title": "Chegada a Portimão", "description": "Bolt/táxi até Studio 17 (€6-10 • 10-15 min).", "icon": "location", "highlight": False},
-         {"time": "20:00", "title": "Check-in Studio 17", "description": "€24 taxa turística + €200 caução (cartão). Pedir upgrade!", "icon": "home", "highlight": True},
-         {"time": "21:00", "title": "Jantar leve no apartamento", "description": "Self-catering — poupança inicial 💰", "icon": "restaurant", "highlight": True},
+         {"time": "15:15", "title": "Rede Expressos • Lisboa Sete Rios", "description": "Embarque com bilhete digital R6LJC56. Lugares 50-53 (janela reservados). Chegar 15 min antes.", "icon": "bus", "highlight": False},
+         {"time": "18:30", "title": "Chegada a Portimão", "description": "Terminal Rodoviário Rua da Abicada. Bolt/táxi até Studio 17 (€6-10 • 10-15 min).", "icon": "location", "highlight": False},
+         {"time": "19:15", "title": "Check-in Studio 17", "description": "€24 taxa turística + €200 caução (cartão). Pedir upgrade!", "icon": "home", "highlight": True},
+         {"time": "20:30", "title": "Jantar leve no apartamento", "description": "Self-catering — poupança inicial 💰", "icon": "restaurant", "highlight": True},
      ]},
     {"day": 2, "date": "13 Julho", "weekday": "Segunda", "title": "Praia + Grutas de Benagil", "subtitle": "O dia mais épico da viagem",
      "events": [
@@ -135,8 +135,8 @@ ITINERARY = [
      "events": [
          {"time": "09:00", "title": "Pequeno-almoço no apartamento", "description": "Terminar mantimentos comprados no Continente.", "icon": "cafe", "highlight": False},
          {"time": "10:00", "title": "Último passeio curto", "description": "Fotos finais na marginal da Praia da Rocha.", "icon": "camera", "highlight": False},
-         {"time": "11:00", "title": "Check-out Studio 17", "description": "Bolt até terminal de autocarros (~€6-8).", "icon": "log-out", "highlight": False},
-         {"time": "13:40", "title": "FlixBus • Regresso", "description": "Portimão → Lisboa Oriente. Chegada ~17:00.", "icon": "bus", "highlight": True},
+         {"time": "11:00", "title": "Check-out Studio 17", "description": "Bolt até Terminal Rodoviário Rua da Abicada (~€6-8).", "icon": "log-out", "highlight": False},
+         {"time": "13:10", "title": "Rede Expressos • Regresso", "description": "R6LJC5N • Lugares 43-46. Portimão → Lisboa Sete Rios. Chegada 16:25.", "icon": "bus", "highlight": True},
      ]},
 ]
 
@@ -841,48 +841,139 @@ async def shopping_toggle(payload: ShoppingToggle):
 # ---- Tickets ----
 @api_router.get("/tickets")
 async def tickets():
+    # QR code helper using quickchart.io free API (renders any string as QR)
+    def qr(data: str) -> str:
+        from urllib.parse import quote
+        return f"https://quickchart.io/qr?text={quote(data)}&size=300&margin=2"
+
     return [
         {
-            "id": "flixbus-ida", "type": "bus", "icon": "bus",
-            "title": "FlixBus • Lisboa → Portimão",
-            "code": "N4V-2861-XT",
-            "when": "12 Jul 2026 • 16:05",
-            "arrival": "19:15 • Portimão terminal",
-            "seat": "Lugares janela • 18B/18C/19B/19C",
-            "price": "€76,91 família",
-            "color": "#4C1D95",
+            "id": "expressos-ida", "type": "bus", "icon": "bus",
+            "operator": "Rede Expressos • EVA Transportes",
+            "title": "Lisboa Sete Rios → Portimão",
+            "code": "R6LJC56",
+            "reservation": "26cde43a-57f3-44ee-961d-365506e1dec4",
+            "when": "12 Jul 2026 • 15:15",
+            "arrival": "18:30 • Terminal Rua da Abicada",
+            "duration": "3h 15m • 0 mudanças",
+            "seat": "Lugares 50 • 51 • 52 • 53",
+            "price": "Bilhete digital • pode usar offline",
+            "qr_url": qr("R6LJC56 - Rede Expressos - Lisboa Sete Rios - Portimao - 12/07/2026 15:15"),
+            "color": "#0284C7",
         },
         {
             "id": "hotel", "type": "hotel", "icon": "bed",
+            "operator": "Atlantichotels",
             "title": "Studio 17 by Atlantichotels",
             "code": "STD17-1276",
-            "when": "12 Jul → 15 Jul • 3 noites",
+            "reservation": "3 noites • studio 4 pax",
+            "when": "12 Jul → 15 Jul",
             "arrival": "Rua João Simões Tavares 17, Portimão",
-            "seat": "Studio 4 pax • cozinha completa",
-            "price": "€24 taxa turística + €200 caução (cartão)",
+            "duration": "Cozinha completa • Wi-Fi grátis",
+            "seat": "Preparar: €24 taxa + €200 caução (cartão)",
+            "price": "Perguntar por upgrade grátis 🎁",
+            "qr_url": qr("Studio 17 Atlantichotels - Sacramento family - 12-15 Jul 2026"),
             "color": "#1D8086",
         },
         {
             "id": "benagil", "type": "activity", "icon": "boat",
-            "title": "Tour Grutas de Benagil (small-group)",
+            "operator": "Tour small-group",
+            "title": "Grutas de Benagil",
             "code": "BEN-SG-2603",
+            "reservation": "A confirmar após chegada",
             "when": "13 Jul 2026 • 15:00",
             "arrival": "Marina de Portimão • duração 2h",
-            "seat": "4 pax • coletes salva-vidas incluídos",
-            "price": "~€30/pessoa • €120 total",
+            "duration": "Grupo pequeno • coletes incluídos",
+            "seat": "4 pax • levar SPF50+ e câmara",
+            "price": "~€30/pessoa • ~€120 total",
+            "qr_url": qr("Benagil Small-Group Tour - Sacramento - 13/07/2026 15:00"),
             "color": "#D96C4E",
         },
         {
-            "id": "flixbus-volta", "type": "bus", "icon": "bus",
-            "title": "FlixBus • Portimão → Lisboa",
-            "code": "N4V-2861-RT",
-            "when": "15 Jul 2026 • 13:40",
-            "arrival": "17:00 • Lisboa Oriente",
-            "seat": "Lugares janela • 12B/12C/13B/13C",
-            "price": "Incluído no €76,91",
-            "color": "#4C1D95",
+            "id": "expressos-volta", "type": "bus", "icon": "bus",
+            "operator": "Rede Expressos • EVA Transportes",
+            "title": "Portimão → Lisboa Sete Rios",
+            "code": "R6LJC5N",
+            "reservation": "26cde43a-57f3-44ee-961d-365506e1dec4",
+            "when": "15 Jul 2026 • 13:10",
+            "arrival": "16:25 • Lisboa Sete Rios",
+            "duration": "3h 15m • 0 mudanças",
+            "seat": "Lugares 43 • 44 • 45 • 46",
+            "price": "Bilhete digital • pode usar offline",
+            "qr_url": qr("R6LJC5N - Rede Expressos - Portimao - Lisboa Sete Rios - 15/07/2026 13:10"),
+            "color": "#0284C7",
         },
     ]
+
+
+# ---- Emergency contacts ----
+@api_router.get("/emergency")
+async def emergency():
+    return [
+        {"id": "112", "label": "Emergência Geral", "sub": "Bombeiros • Polícia • Ambulância", "phone": "112", "icon": "warning", "tone": "danger", "always_free": True},
+        {"id": "sns24", "label": "SNS 24 (saúde)", "sub": "Aconselhamento médico 24h", "phone": "808242424", "icon": "medkit", "tone": "info", "always_free": False},
+        {"id": "hospital", "label": "Hospital de Portimão", "sub": "Sítio do Poço Seco • urgências 24h", "phone": "282450330", "icon": "medical", "tone": "info", "always_free": False, "lat": 37.1364, "lng": -8.5301},
+        {"id": "farmacia-rocha", "label": "Farmácia Central Portimão", "sub": "Rua do Comércio • 09h-19h", "phone": "282417055", "icon": "medical-outline", "tone": "info", "always_free": False, "lat": 37.1379, "lng": -8.5385},
+        {"id": "psp", "label": "PSP Portimão", "sub": "Polícia local", "phone": "282422022", "icon": "shield", "tone": "info", "always_free": False},
+        {"id": "gnr-praia", "label": "GNR Praia da Rocha", "sub": "Posto de praia (Verão)", "phone": "282416060", "icon": "shield-half", "tone": "info", "always_free": False},
+        {"id": "hotel-contact", "label": "Studio 17 (hotel)", "sub": "Ajuda com o alojamento", "phone": "351282400000", "icon": "home", "tone": "brand", "always_free": False},
+        {"id": "embaixada-br", "label": "Embaixada do Brasil", "sub": "Estr. das Laranjeiras 144, Lisboa", "phone": "213248510", "icon": "flag", "tone": "info", "always_free": False},
+        {"id": "consul-uk", "label": "Turismo de Portimão", "sub": "Apoio a turistas", "phone": "282470700", "icon": "information-circle", "tone": "info", "always_free": False},
+    ]
+
+
+# ---- Trip stats (live dashboard) ----
+@api_router.get("/trip-stats")
+async def trip_stats():
+    now = now_lisbon()
+    trip_start = datetime(2026, 7, 12, tzinfo=timezone.utc)
+    trip_end = datetime(2026, 7, 15, tzinfo=timezone.utc)
+
+    days_until = (trip_start.date() - now.date()).days
+    if days_until > 0:
+        phase = "before"
+        phase_label = "Faltam"
+        phase_value = days_until
+        phase_unit = "dias"
+    elif now.date() > trip_end.date():
+        phase = "after"
+        phase_label = "Viagem terminada"
+        phase_value = 0
+        phase_unit = ""
+    else:
+        phase = "during"
+        phase_label = "Dia da viagem"
+        phase_value = (now.date() - trip_start.date()).days + 1
+        phase_unit = f"de {(trip_end.date() - trip_start.date()).days + 1}"
+
+    # Budget consumed
+    expenses = await db.expenses.find({}, {"_id": 0}).to_list(500)
+    total_spent = round(sum(e["amount"] for e in expenses), 2)
+    budget_ratio = total_spent / TRIP_INFO["budget_max"] if TRIP_INFO["budget_max"] else 0
+
+    # Checklist progress
+    checklist = await db.checklist.find({}, {"_id": 0}).to_list(200)
+    checked = sum(1 for c in checklist if c.get("checked"))
+    checklist_ratio = checked / len(checklist) if checklist else 0
+
+    # Shopping progress
+    shopping = await db.shopping.find({}, {"_id": 0}).to_list(200)
+    shopping_checked = sum(1 for s in shopping if s.get("checked"))
+
+    return {
+        "phase": phase,
+        "phase_label": phase_label,
+        "phase_value": phase_value,
+        "phase_unit": phase_unit,
+        "budget_spent": total_spent,
+        "budget_max": TRIP_INFO["budget_max"],
+        "budget_ratio": round(budget_ratio, 3),
+        "checklist_done": checked,
+        "checklist_total": len(checklist),
+        "checklist_ratio": round(checklist_ratio, 3),
+        "shopping_done": shopping_checked,
+        "shopping_total": len(shopping),
+    }
 
 
 # ---- AI Chat (Emergent LLM Key + Gemini) ----
