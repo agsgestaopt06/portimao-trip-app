@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: portimao-family-backend
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
+    branch: main
+    healthCheckPath: /api/
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: portimao_trip
+      - key: EMERGENT_LLM_KEY
+        sync: false
